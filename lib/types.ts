@@ -1,6 +1,8 @@
 /**
- * Signal is the unit of analysis. Every mode returns 1 or 2 Signals —
- * never zero (refuse instead), never three or more.
+ * Signal is the unit of analysis. Every mode returns between 1 and 4
+ * signals — but the count is governed by materiality, not a quota.
+ * Surface a signal only when it adds a distinct perceptual or
+ * strategic insight. Refuse rather than pad. Hard ceiling is 4.
  */
 export interface Signal {
   /** What's observable in the text. Anchored with a verbatim quote. */

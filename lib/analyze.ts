@@ -177,7 +177,7 @@ function passesSignalQuality(
   source: string
 ): boolean {
   if (!Array.isArray(signals)) return false
-  if (signals.length < 1 || signals.length > 2) return false
+  if (signals.length < 1 || signals.length > 4) return false
   for (const s of signals) {
     if (!s || !s.observation || !s.consequence || !s.steering) return false
     if (!containsAnchorFromSource(s.observation, source)) return false
@@ -202,7 +202,7 @@ function passesCompareSignalQuality(
   b: string
 ): boolean {
   if (!Array.isArray(signals)) return false
-  if (signals.length < 1 || signals.length > 2) return false
+  if (signals.length < 1 || signals.length > 4) return false
   for (const s of signals) {
     if (!s || !s.observation || !s.consequence || !s.steering) return false
     const anchoredEither =
@@ -224,12 +224,12 @@ function passesCompareSignalQuality(
 }
 
 /**
- * Hard cap: never let more than 2 signals reach the UI. Also enforce
- * the depth-field cap of 2 per signal — keeps any unruly model output
- * from leaking into the UI.
+ * Hard cap: never let more than 4 signals reach the UI. Materiality
+ * is enforced by the prompt; this is just a safety ceiling. Also
+ * enforces the depth-field cap of 2 per signal.
  */
 function clampSignals(signals: Signal[]): Signal[] {
-  return signals.slice(0, 2).map(clampDepth)
+  return signals.slice(0, 4).map(clampDepth)
 }
 
 function clampDepth(s: Signal): Signal {
