@@ -68,7 +68,7 @@ export default function ComparePage() {
 
   return (
     <main className="mx-auto w-full max-w-3xl px-6 sm:px-8 pt-20 sm:pt-28 pb-20">
-      <header className="mb-20 sm:mb-24 flex items-center justify-between">
+      <header className="mb-12 sm:mb-14 flex items-center justify-between">
         <a
           href="/"
           className="font-sans text-[14px] font-medium tracking-wordmark text-ink lowercase hover:text-ink-dimmed transition-colors duration-200"
@@ -77,6 +77,12 @@ export default function ComparePage() {
         </a>
         <ModeNav />
       </header>
+
+      {(status === "empty" || status === "comparing") && (
+        <p className="mb-12 sm:mb-14 font-serif text-[17px] leading-[1.55] text-ink-dimmed">
+          Paste two AI answers to the same question. See how each shapes the reader.
+        </p>
+      )}
 
       {(status === "empty" || status === "comparing") && (
         <CompareInputView
