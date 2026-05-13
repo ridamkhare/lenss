@@ -36,7 +36,7 @@ function relativeDate(iso: string): string {
 }
 
 function modeLabel(mode: SavedItem["mode"]): string {
-  if (mode === "reveal") return "reveal"
+  if (mode === "reveal") return "read"
   if (mode === "compare") return "compare"
   return "yours"
 }
@@ -75,7 +75,7 @@ export function ArchiveList() {
   function handleCompareWith(item: SavedItem) {
     const text = item.mode === "compare" ? item.sourceA : item.source
     setComparePrefill(text)
-    router.push("/")
+    router.push("/compare")
   }
 
   if (items === null) return null
