@@ -18,8 +18,28 @@ const sans = Inter({
 })
 
 export const metadata: Metadata = {
-  title: "lens",
-  description: "Reveal the shape of an AI answer.",
+  metadataBase: new URL("https://lenss.one"),
+  title: "lenss",
+  description:
+    "Paste an AI answer. See what shaped it, and where it leads.",
+  openGraph: {
+    title: "lenss",
+    description:
+      "Paste an AI answer. See what shaped it, and where it leads.",
+    url: "https://lenss.one",
+    siteName: "lenss",
+    type: "website",
+  },
+  twitter: {
+    card: "summary",
+    title: "lenss",
+    description:
+      "Paste an AI answer. See what shaped it, and where it leads.",
+  },
+  robots: {
+    index: false,
+    follow: false,
+  },
 }
 
 export default function RootLayout({
