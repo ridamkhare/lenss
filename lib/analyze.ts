@@ -134,6 +134,11 @@ const BANNED_PATTERNS: RegExp[] = [
   // Jargon and hedging
   /\b(epistemic|ontological|hegemonic|problematizes|interrogates|valorizes|instantiates)\b/i,
   /\b(perhaps|arguably|it could be (?:said|argued)|some might say|one could argue)\b/i,
+
+  // Taxonomic / classification openings — flatten texture into category
+  /\bthis (?:is|reads as) (?:a |an )?(?:factual|persuasive|technical|informational|opinion|expository|descriptive) (?:breakdown|piece|writing|text|passage)\b/i,
+  /\bnothing here to read for communication\b/i,
+  /\bnot communication style\b/i,
 ]
 
 function hasBannedPhrase(text: string): boolean {
