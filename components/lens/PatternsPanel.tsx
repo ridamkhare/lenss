@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
+import { SignalBlock } from "./SignalBlock"
 import { listSelfEntries } from "@/lib/storage"
 import type { SelfReadingResult } from "@/lib/types"
 
@@ -82,15 +83,14 @@ export function PatternsPanel({ minEntries = 3 }: { minEntries?: number }) {
   if (status === "shown" && result) {
     return (
       <div className="mb-12 pb-10 border-b border-divider animate-reveal">
-        <p className="font-sans text-[11px] font-medium uppercase tracking-label text-ink-dimmed mb-3">
+        <p className="font-sans text-[11px] font-medium uppercase tracking-label text-ink-dimmed mb-6">
           across your saved entries
         </p>
-        <p className="font-serif text-[17px] leading-[1.65] text-ink mb-6">
-          {result.noticing}
-        </p>
-        <p className="font-serif italic text-[18px] leading-[1.45] text-ink sm:pl-6 mb-8">
-          {result.question}
-        </p>
+        <div className="space-y-10 mb-8">
+          {result.signals.map((s, i) => (
+            <SignalBlock key={i} signal={s} delayMs={i * 200} />
+          ))}
+        </div>
         <Button variant="ghost" size="link" onClick={handleDismiss}>
           Close
         </Button>

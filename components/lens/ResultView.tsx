@@ -1,18 +1,10 @@
 "use client"
 
-import { DimensionBlock } from "./DimensionBlock"
 import { Button } from "@/components/ui/button"
 import { SaveButton } from "./SaveButton"
+import { SignalBlock } from "./SignalBlock"
 import { saveReveal } from "@/lib/storage"
-import type { RevealResult, DimensionKey } from "@/lib/types"
-
-const DIMENSIONS: { key: DimensionKey; label: string }[] = [
-  { key: "dominant_framing", label: "Dominant Framing" },
-  { key: "hidden_assumptions", label: "Hidden Assumptions" },
-  { key: "suppressed_alternatives", label: "Suppressed Alternatives" },
-  { key: "semantic_gravity", label: "Semantic Gravity" },
-  { key: "alternate_framing", label: "Alternate Framing" },
-]
+import type { RevealResult } from "@/lib/types"
 
 export function ResultView({
   source,
@@ -23,6 +15,8 @@ export function ResultView({
   result: RevealResult
   onReset: () => void
 }) {
+  const lastDelay = 260 + result.signals.length * 220
+
   return (
     <div>
       <section
@@ -39,21 +33,20 @@ export function ResultView({
         style={{ animationDelay: "120ms" }}
       />
 
-      <div>
-        {DIMENSIONS.map((d, i) => (
-          <DimensionBlock
-            key={d.key}
-            label={d.label}
-            body={result[d.key]}
-            delayMs={240 + i * 160}
-            emphasized={d.key === "alternate_framing"}
-          />
+      <div className="space-y-12">
+        {result.signals.map((s, i) => (
+          <div key={i}>
+            {i > 0 && (
+              <hr className="mb-12 border-0 border-t border-divider" />
+            )}
+            <SignalBlock signal={s} delayMs={260 + i * 220} />
+          </div>
         ))}
       </div>
 
       <div
         className="mt-16 flex flex-wrap justify-center items-center gap-x-8 gap-y-3 animate-reveal"
-        style={{ animationDelay: "1300ms" }}
+        style={{ animationDelay: `${lastDelay + 600}ms` }}
       >
         <SaveButton onSave={() => saveReveal(source, result)} />
         <Button variant="ghost" size="link" onClick={onReset}>

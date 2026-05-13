@@ -9,8 +9,7 @@ import {
   type SavedItem,
 } from "@/lib/storage"
 import { Button } from "@/components/ui/button"
-import { DimensionBlock } from "./DimensionBlock"
-import { ReadingPanel } from "./ReadingPanel"
+import { SignalBlock } from "./SignalBlock"
 
 function relativeDate(iso: string): string {
   const then = new Date(iso).getTime()
@@ -48,6 +47,16 @@ function sourceSnippet(item: SavedItem, max = 80): string {
   return trimmed.length > max ? trimmed.slice(0, max) + "…" : trimmed
 }
 
+/** A result is in the new shape if it has a `signals` array. */
+function hasSignals(result: unknown): result is { signals: unknown[] } {
+  return (
+    !!result &&
+    typeof result === "object" &&
+    "signals" in (result as Record<string, unknown>) &&
+    Array.isArray((result as Record<string, unknown>).signals)
+  )
+}
+
 export function ArchiveList() {
   const router = useRouter()
   const [items, setItems] = useState<SavedItem[] | null>(null)
@@ -69,9 +78,7 @@ export function ArchiveList() {
     router.push("/")
   }
 
-  if (items === null) {
-    return null
-  }
+  if (items === null) return null
 
   if (items.length === 0) {
     return (
@@ -138,73 +145,66 @@ export function ArchiveList() {
 }
 
 function ItemBody({ item }: { item: SavedItem }) {
-  if (item.mode === "reveal") {
+  // Legacy items saved before the signal refactor: render minimally
+  // with a small note. The user can delete to clean up.
+  if (!hasSignals(item.result)) {
     return (
       <div>
-        <p className="font-serif text-[14px] leading-[1.55] text-ink-dimmed mb-8 whitespace-pre-wrap">
-          {item.source}
+        {item.mode === "compare" ? (
+          <>
+            <p className="font-serif text-[14px] leading-[1.55] text-ink-dimmed mb-3 whitespace-pre-wrap">
+              {item.sourceA}
+            </p>
+            <p className="font-sans text-[10px] text-ink-dimmed mb-3">— vs —</p>
+            <p className="font-serif text-[14px] leading-[1.55] text-ink-dimmed mb-6 whitespace-pre-wrap">
+              {item.sourceB}
+            </p>
+          </>
+        ) : (
+          <p className="font-serif text-[14px] leading-[1.55] text-ink-dimmed mb-6 whitespace-pre-wrap">
+            {item.source}
+          </p>
+        )}
+        <p className="font-sans text-[11px] text-ink-dimmed italic">
+          Saved in an earlier reading format. Re-read this passage in
+          today's lens to update.
         </p>
-        <div>
-          <DimensionBlock
-            label="Dominant Framing"
-            body={item.result.dominant_framing}
-            delayMs={0}
-          />
-          <DimensionBlock
-            label="Hidden Assumptions"
-            body={item.result.hidden_assumptions}
-            delayMs={0}
-          />
-          <DimensionBlock
-            label="Suppressed Alternatives"
-            body={item.result.suppressed_alternatives}
-            delayMs={0}
-          />
-          <DimensionBlock
-            label="Semantic Gravity"
-            body={item.result.semantic_gravity}
-            delayMs={0}
-          />
-          <DimensionBlock
-            label="Alternate Framing"
-            body={item.result.alternate_framing}
-            delayMs={0}
-            emphasized
-          />
-        </div>
       </div>
     )
   }
+
+  const signals = item.result.signals
 
   if (item.mode === "compare") {
     return (
       <div>
-        <p className="font-sans text-[10px] font-medium uppercase tracking-label text-ink-dimmed mb-2">
-          the question both responses answered
+        <p className="font-serif text-[13px] leading-[1.55] text-ink-dimmed mb-6 whitespace-pre-wrap">
+          A: {item.sourceA.slice(0, 200)}
+          {item.sourceA.length > 200 ? "…" : ""}
         </p>
-        <p className="font-serif italic text-[16px] leading-[1.55] text-ink-dimmed mb-8">
-          {item.result.shared_question}
+        <p className="font-serif text-[13px] leading-[1.55] text-ink-dimmed mb-8 whitespace-pre-wrap">
+          B: {item.sourceB.slice(0, 200)}
+          {item.sourceB.length > 200 ? "…" : ""}
         </p>
-        <div className="grid gap-10 sm:gap-8 sm:grid-cols-2">
-          <ReadingPanel reading={item.result.left} delayMs={0} />
-          <ReadingPanel reading={item.result.right} delayMs={0} />
+        <div className="space-y-10">
+          {signals.map((s, i) => (
+            <SignalBlock key={i} signal={s} delayMs={0} />
+          ))}
         </div>
       </div>
     )
   }
 
-  // self
   return (
     <div>
-      <p className="font-serif text-[14px] leading-[1.55] text-ink-dimmed mb-8 whitespace-pre-wrap">
+      <p className="font-serif text-[13px] leading-[1.55] text-ink-dimmed mb-8 whitespace-pre-wrap">
         {item.source}
       </p>
-      <p className="font-serif text-[16px] leading-[1.65] text-ink mb-6">
-        {item.result.noticing}
-      </p>
-      <p className="font-serif italic text-[18px] leading-[1.45] text-ink sm:pl-6">
-        {item.result.question}
-      </p>
+      <div className="space-y-10">
+        {signals.map((s, i) => (
+          <SignalBlock key={i} signal={s} delayMs={0} />
+        ))}
+      </div>
     </div>
   )
 }
