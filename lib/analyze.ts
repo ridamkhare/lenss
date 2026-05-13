@@ -154,6 +154,7 @@ const DEPTH_KEYS = [
   "audience_effect",
   "alternative_framing",
   "different_steering",
+  "likely_next_concerns",
 ] as const
 
 function depthFieldsClean(s: Signal): boolean {

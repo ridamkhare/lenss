@@ -20,6 +20,7 @@ export interface Signal {
   audience_effect?: string
   alternative_framing?: string
   different_steering?: string
+  likely_next_concerns?: string
 }
 
 export interface RevealResult {

@@ -8,12 +8,14 @@ type DepthKey =
   | "audience_effect"
   | "alternative_framing"
   | "different_steering"
+  | "likely_next_concerns"
 
 const DEPTH_FIELDS: { key: DepthKey; trigger: string; label: string }[] = [
   { key: "why_it_matters", trigger: "why this matters", label: "Why this matters" },
   { key: "audience_effect", trigger: "audience effect", label: "Audience effect" },
   { key: "alternative_framing", trigger: "alternative framing", label: "Alternative framing" },
   { key: "different_steering", trigger: "different steering path", label: "Different steering path" },
+  { key: "likely_next_concerns", trigger: "likely next concerns", label: "Likely next concerns" },
 ]
 
 export function SignalBlock({

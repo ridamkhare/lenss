@@ -25,6 +25,7 @@ A Signal MAY ALSO include up to TWO of these OPTIONAL DEPTH FIELDS — surfaced 
 - audience_effect: one sentence. How a specific kind of reader (named concretely: "a skeptical reader", "a reader new to the topic", "a reader being persuaded") receives it differently.
 - alternative_framing: one sentence. A different way the same content could be framed, named concretely. Not vague.
 - different_steering: one sentence. A different small suggestion serving a different intent than the primary steering. Frame as a choice between intents.
+- likely_next_concerns: one concise sentence naming the strongest adjacent questions, anxieties, or decision paths the passage quietly opens for the reader. Only include when the passage clearly expands the reader's decision space or implied next questions. Ground this in observable answer structure and topic progression — never speculative psychology, never guesses about feelings.
 
 If none of these add a different angle, omit all of them. The default is no depth fields.`
 
