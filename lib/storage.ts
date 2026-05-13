@@ -6,10 +6,7 @@ import type {
 
 /**
  * Local-only archive of saved readings. Lives in localStorage on the
- * user's device. Never leaves it. The privacy promise the product
- * makes — "nothing you save leaves this device" — is enforced by
- * never sending these items to any server (except, transiently, when
- * the user opts into a cross-entry pattern read).
+ * user's device and never leaves it.
  */
 
 export type SavedRevealItem = {
@@ -126,16 +123,6 @@ export function saveSelf(
 
 export function listItems(): SavedItem[] {
   return readArchive()
-}
-
-export function countSelfEntries(): number {
-  return readArchive().filter((i) => i.mode === "self").length
-}
-
-export function listSelfEntries(): SavedSelfItem[] {
-  return readArchive().filter(
-    (i): i is SavedSelfItem => i.mode === "self"
-  )
 }
 
 export function deleteItem(id: string): void {

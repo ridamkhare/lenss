@@ -4,7 +4,6 @@ import {
   SYSTEM_PROMPT,
   COMPARE_SYSTEM_PROMPT,
   SELF_SYSTEM_PROMPT,
-  PATTERNS_SYSTEM_PROMPT,
 } from "./prompt"
 import type {
   AnalyzeResponse,
@@ -19,8 +18,8 @@ import type {
 
 /* ────────────────────────────────────────────────────────────────────
    Model routing — OpenRouter (preferred when key is set), then Anthropic,
-   then mock. Self/patterns paths can use a separate, stronger model
-   via OPENROUTER_SELF_MODEL.
+   then mock. The yours path can use a separate, stronger model via
+   OPENROUTER_SELF_MODEL.
    ──────────────────────────────────────────────────────────────────── */
 
 const OPENROUTER_MODEL =
@@ -315,7 +314,8 @@ async function selfWithClaude(text: string): Promise<SelfResponse> {
 }
 
 /* ────────────────────────────────────────────────────────────────────
-   Patterns — across saved self-entries
+   Crisis detection — used by yours-mode mock and (server-side) by any
+   future safety surface.
    ──────────────────────────────────────────────────────────────────── */
 
 const CRISIS_PATTERNS: RegExp[] = [
@@ -326,56 +326,6 @@ const CRISIS_PATTERNS: RegExp[] = [
 
 function looksLikeCrisis(text: string): boolean {
   return CRISIS_PATTERNS.some((p) => p.test(text))
-}
-
-export async function analyzePatterns(
-  entries: string[]
-): Promise<SelfResponse> {
-  if (entries.length < 2) {
-    return {
-      declined: true,
-      reason: "Fewer than two entries — not enough to name a pattern.",
-    }
-  }
-  if (entries.some((e) => looksLikeCrisis(e))) {
-    return {
-      declined: true,
-      reason:
-        "This is heavier than the instrument was built for. Please talk to someone you trust.",
-    }
-  }
-  if (!hasModelAccess()) return mockPatterns(entries)
-  return patternsWithClaude(entries)
-}
-
-async function patternsWithClaude(
-  entries: string[]
-): Promise<SelfResponse> {
-  const userMessage = entries
-    .map((e, i) => `ENTRY ${i + 1}:\n${e}`)
-    .join("\n\n---\n\n")
-  const raw = await callModel(
-    PATTERNS_SYSTEM_PROMPT,
-    userMessage,
-    900,
-    OPENROUTER_SELF_MODEL
-  )
-  const parsed = extractJson<SelfResponse>(raw)
-  if (!parsed) {
-    return {
-      declined: true,
-      reason: "The instrument couldn't find a pattern across these entries.",
-    }
-  }
-  if ("declined" in parsed) return parsed
-  const r = parsed as SelfReadingResult
-  if (!Array.isArray(r.signals) || r.signals.length === 0) {
-    return {
-      declined: true,
-      reason: "The instrument couldn't find a pattern across these entries.",
-    }
-  }
-  return { signals: clampSignals(r.signals) }
 }
 
 /* ────────────────────────────────────────────────────────────────────
@@ -449,39 +399,3 @@ function mockSelf(text: string): SelfResponse {
   }
 }
 
-function mockPatterns(entries: string[]): SelfResponse {
-  const fragments = entries.flatMap((e) =>
-    e
-      .split(/[.,;:?!\n]+/)
-      .map((s) => s.trim())
-      .filter((s) => {
-        const w = s.split(/\s+/).filter(Boolean).length
-        return w >= 2 && w <= 5
-      })
-  )
-  const seen = new Map<string, number>()
-  let common: string | null = null
-  for (const f of fragments) {
-    const key = f.toLowerCase()
-    const c = (seen.get(key) || 0) + 1
-    seen.set(key, c)
-    if (c >= 2 && !common) common = f
-  }
-  if (!common) {
-    return {
-      declined: true,
-      reason: "These entries don't share enough to name a pattern across them.",
-    }
-  }
-  return {
-    signals: [
-      {
-        observation: `The phrase "${common}" appears across more than one entry, and tends to arrive where the entry is in its quieter half.`,
-        consequence:
-          "A reader of the entries together notices the move; a reader of any one entry would not.",
-        steering:
-          "If the recurrence is doing work, leave it. If you want the entries to feel more distinct, name the phrase in only one.",
-      },
-    ],
-  }
-}

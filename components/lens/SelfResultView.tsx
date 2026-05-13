@@ -50,16 +50,9 @@ export function SelfResultView({
       >
         <SaveButton onSave={() => saveSelf(source, result)} />
         <Button variant="ghost" size="link" onClick={onReset}>
-          Read another
+          Another
         </Button>
       </div>
-
-      <p
-        className="mt-12 text-center font-sans text-[11px] text-ink-dimmed animate-reveal"
-        style={{ animationDelay: `${lastDelay + 800}ms` }}
-      >
-        Come back when you write something next.
-      </p>
     </div>
   )
 }

@@ -3,7 +3,6 @@
 import Link from "next/link"
 import { useEffect, useState } from "react"
 import { ArchiveList } from "@/components/lens/ArchiveList"
-import { PatternsPanel } from "@/components/lens/PatternsPanel"
 import { Footer } from "@/components/lens/Footer"
 import { ModeNav } from "@/components/lens/ModeNav"
 import { clearArchive, listItems } from "@/lib/storage"
@@ -48,8 +47,6 @@ export default function ArchivePage() {
           Saved readings live on this device only.
         </p>
       </div>
-
-      <PatternsPanel />
 
       <ArchiveList key={version} />
 

@@ -1,13 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Button } from "@/components/ui/button"
 
-/**
- * Quiet save affordance. One click → saves to local archive → shows
- * "Saved" inline confirmation that fades to "Saved · in your archive"
- * with a small link. No undo button — delete from the archive page.
- */
 export function SaveButton({
   onSave,
   label = "Save",
@@ -25,11 +19,11 @@ export function SaveButton({
 
   if (state === "saved") {
     return (
-      <span className="font-sans text-[12px] text-ink-dimmed">
+      <span className="font-sans text-[11px] text-ink-dimmed">
         Saved ·{" "}
         <a
           href="/archive"
-          className="text-accent hover:text-accent-hover transition-colors duration-200"
+          className="hover:text-ink transition-colors duration-200"
         >
           in your archive
         </a>
@@ -38,8 +32,12 @@ export function SaveButton({
   }
 
   return (
-    <Button variant="ghost" size="link" onClick={handle}>
+    <button
+      type="button"
+      onClick={handle}
+      className="font-sans text-[11px] text-ink-dimmed hover:text-ink transition-colors duration-200"
+    >
       {label}
-    </Button>
+    </button>
   )
 }

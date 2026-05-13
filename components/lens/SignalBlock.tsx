@@ -1,12 +1,7 @@
 "use client"
 
-import { useState } from "react"
 import type { Signal } from "@/lib/types"
 
-/**
- * One Signal — three labeled blocks plus optional click-to-expand
- * alternate wording. Same typographic system as the rest of the product.
- */
 export function SignalBlock({
   signal,
   delayMs,
@@ -14,9 +9,6 @@ export function SignalBlock({
   signal: Signal
   delayMs: number
 }) {
-  const [expanded, setExpanded] = useState(false)
-  const hasAlt = !!signal.alternate_wording
-
   return (
     <section
       className="animate-reveal"
@@ -48,30 +40,12 @@ export function SignalBlock({
           <p className="font-serif text-[16px] leading-[1.65] text-ink">
             {signal.steering}
           </p>
-        </div>
-
-        {hasAlt && !expanded && (
-          <div className="pt-1">
-            <button
-              type="button"
-              onClick={() => setExpanded(true)}
-              className="font-sans text-[11px] text-accent hover:text-accent-hover transition-colors duration-200"
-            >
-              Show alternate wording
-            </button>
-          </div>
-        )}
-
-        {hasAlt && expanded && (
-          <div className="pt-1 animate-reveal">
-            <p className="font-sans text-[10px] font-medium uppercase tracking-label text-ink-dimmed mb-2">
-              Alternate wording
-            </p>
-            <p className="font-serif italic text-[16px] leading-[1.65] text-ink">
+          {signal.alternate_wording && (
+            <p className="mt-3 pl-6 sm:pl-8 font-serif italic text-[15px] leading-[1.6] text-ink-dimmed">
               {signal.alternate_wording}
             </p>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </section>
   )

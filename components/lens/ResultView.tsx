@@ -50,7 +50,7 @@ export function ResultView({
       >
         <SaveButton onSave={() => saveReveal(source, result)} />
         <Button variant="ghost" size="link" onClick={onReset}>
-          Reveal another
+          Another
         </Button>
       </div>
     </div>

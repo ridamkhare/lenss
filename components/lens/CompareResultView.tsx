@@ -38,7 +38,7 @@ export function CompareResultView({
       >
         <SaveButton onSave={() => saveCompare(sourceA, sourceB, result)} />
         <Button variant="ghost" size="link" onClick={onReset}>
-          Compare another pair
+          Another
         </Button>
       </div>
     </div>
