@@ -25,13 +25,6 @@ export function SelfInputView({
 
   return (
     <div className="animate-reveal">
-      <p className="font-serif text-[18px] leading-[1.5] text-ink mb-2">
-        Paste something you wrote.
-      </p>
-      <p className="font-serif text-[15px] leading-[1.5] text-ink-dimmed mb-6">
-        A journal entry, a tweet, an email draft, a decision note.
-      </p>
-
       <Textarea
         value={value}
         onChange={(e) => onChange(e.target.value)}
