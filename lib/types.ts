@@ -21,6 +21,11 @@ export interface Signal {
   alternative_framing?: string
   different_steering?: string
   likely_next_concerns?: string
+  /** Secondary inference layer — bounded, observable, never speculative. */
+  hidden_intent_branching?: string
+  framing_pull?: string
+  alternate_reader_realities?: string
+  conversational_trajectory?: string
 }
 
 export interface RevealResult {

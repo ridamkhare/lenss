@@ -9,6 +9,10 @@ type DepthKey =
   | "alternative_framing"
   | "different_steering"
   | "likely_next_concerns"
+  | "hidden_intent_branching"
+  | "framing_pull"
+  | "alternate_reader_realities"
+  | "conversational_trajectory"
 
 const DEPTH_FIELDS: { key: DepthKey; trigger: string; label: string }[] = [
   { key: "why_it_matters", trigger: "why this matters", label: "Why this matters" },
@@ -16,6 +20,10 @@ const DEPTH_FIELDS: { key: DepthKey; trigger: string; label: string }[] = [
   { key: "alternative_framing", trigger: "alternative framing", label: "Alternative framing" },
   { key: "different_steering", trigger: "different steering path", label: "Different steering path" },
   { key: "likely_next_concerns", trigger: "likely next concerns", label: "Likely next concerns" },
+  { key: "hidden_intent_branching", trigger: "hidden intent branching", label: "Hidden intent branching" },
+  { key: "framing_pull", trigger: "framing pull", label: "Framing pull" },
+  { key: "alternate_reader_realities", trigger: "alternate reader realities", label: "Alternate reader realities" },
+  { key: "conversational_trajectory", trigger: "conversational trajectory", label: "Conversational trajectory" },
 ]
 
 export function SignalBlock({

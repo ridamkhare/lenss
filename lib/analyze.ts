@@ -155,6 +155,10 @@ const DEPTH_KEYS = [
   "alternative_framing",
   "different_steering",
   "likely_next_concerns",
+  "hidden_intent_branching",
+  "framing_pull",
+  "alternate_reader_realities",
+  "conversational_trajectory",
 ] as const
 
 function depthFieldsClean(s: Signal): boolean {

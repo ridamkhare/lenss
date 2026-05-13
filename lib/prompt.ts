@@ -19,15 +19,22 @@ const SIGNAL_SHAPE = `A Signal has three required fields:
 A Signal MAY include:
 - alternate_wording: one concrete rewrite of the quoted phrase or sentence. Use sparingly — only when the steering is best shown rather than told.
 
-A Signal MAY ALSO include up to TWO of these OPTIONAL DEPTH FIELDS — surfaced to the reader only on click. Each must add a genuinely different angle. NEVER include more than two per signal. NEVER restate the consequence or steering. If a depth field would be generic or wandering, omit it.
+A Signal MAY ALSO include up to TWO of these OPTIONAL DEPTH FIELDS — surfaced to the reader only on click. Each must add a genuinely different angle. NEVER include more than two TOTAL per signal across all options below. NEVER restate the consequence or steering. If a depth field would be generic or wandering, omit it.
 
+PRIMARY LAYER — about the writing itself:
 - why_it_matters: one sentence. Names the underlying communication move in plainer terms — what kind of move this is. Not pseudo-depth, not philosophy.
 - audience_effect: one sentence. How a specific kind of reader (named concretely: "a skeptical reader", "a reader new to the topic", "a reader being persuaded") receives it differently.
 - alternative_framing: one sentence. A different way the same content could be framed, named concretely. Not vague.
 - different_steering: one sentence. A different small suggestion serving a different intent than the primary steering. Frame as a choice between intents.
 - likely_next_concerns: one concise sentence naming the strongest adjacent questions or decision paths the passage quietly opens for the reader. Include when the passage clearly expands the reader's decision space — and especially when the passage ends with an explicit list of next options, comparisons, or follow-up directions. Ground this in observable answer structure and topic progression, not in speculation about what the reader is feeling.
 
-If none of these add a different angle, omit all of them. The default is no depth fields.`
+SECONDARY LAYER — about the passage's communicative and conversational trajectory. Only include when the inference produces clear perceptual or strategic value. Each one must remain grounded in observable structure — never philosophy, never ontology, never abstract conceptual exploration:
+- hidden_intent_branching: one sentence naming the adjacent intent paths or decision branches the answer quietly opens — what the structure of the response makes available beyond what was literally asked. Anchor to specific structural moves in the passage. Distinct from likely_next_concerns: that field names questions the reader is left with; this field names intent paths the writer's structure has already pre-shaped.
+- framing_pull: one sentence naming the concepts that become structurally or emotionally central in the passage even though they were not asked about directly — what the passage gravitates toward when not steered. Anchor to where the pull is visible (repetition, foregrounding, return).
+- alternate_reader_realities: one sentence describing how a reader with a different priority (named concretely — a budget-first reader, a recovery-first reader, a skeptic reader, a decision-fatigued reader) would experience or follow the same answer differently. Distinct from audience_effect: that field is about reception of a tonal move; this field is about how priority changes the path through the same content.
+- conversational_trajectory: one sentence naming where the answer is steering the conversation next — what kind of follow-up it makes likely, what direction it forecloses. Read from the closing posture and the structural emphasis.
+
+If none of these add a different angle, omit all of them. The default is no depth fields. Across primary and secondary together: at most two per signal.`
 
 const ONE_PREFERRED_RULE = `THE ONE-PREFERRED RULE — one strong signal is always preferred over two weak ones.
 
