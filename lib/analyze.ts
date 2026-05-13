@@ -144,6 +144,24 @@ function hasBannedPhrase(text: string): boolean {
  * Validate a list of signals against a source. Returns true if 1–2
  * signals are present, each anchored and free of banned phrases.
  */
+const DEPTH_KEYS = [
+  "why_it_matters",
+  "audience_effect",
+  "alternative_framing",
+  "different_steering",
+] as const
+
+function depthFieldsClean(s: Signal): boolean {
+  let present = 0
+  for (const k of DEPTH_KEYS) {
+    const v = s[k]
+    if (!v) continue
+    present += 1
+    if (hasBannedPhrase(v)) return false
+  }
+  return present <= 2
+}
+
 function passesSignalQuality(
   signals: Signal[] | undefined,
   source: string
@@ -162,6 +180,7 @@ function passesSignalQuality(
     if (s.alternate_wording && hasBannedPhrase(s.alternate_wording)) {
       return false
     }
+    if (!depthFieldsClean(s)) return false
   }
   return true
 }
@@ -189,15 +208,34 @@ function passesCompareSignalQuality(
     if (s.alternate_wording && hasBannedPhrase(s.alternate_wording)) {
       return false
     }
+    if (!depthFieldsClean(s)) return false
   }
   return true
 }
 
 /**
- * Hard cap: never let more than 2 signals reach the UI.
+ * Hard cap: never let more than 2 signals reach the UI. Also enforce
+ * the depth-field cap of 2 per signal — keeps any unruly model output
+ * from leaking into the UI.
  */
 function clampSignals(signals: Signal[]): Signal[] {
-  return signals.slice(0, 2)
+  return signals.slice(0, 2).map(clampDepth)
+}
+
+function clampDepth(s: Signal): Signal {
+  const present = DEPTH_KEYS.filter((k) => !!s[k])
+  if (present.length <= 2) return s
+  const keep = new Set(present.slice(0, 2))
+  const out: Signal = {
+    observation: s.observation,
+    consequence: s.consequence,
+    steering: s.steering,
+  }
+  if (s.alternate_wording) out.alternate_wording = s.alternate_wording
+  for (const k of present) {
+    if (keep.has(k)) out[k] = s[k]
+  }
+  return out
 }
 
 /* ────────────────────────────────────────────────────────────────────

@@ -9,8 +9,17 @@ export interface Signal {
   consequence: string
   /** A small, specific steering suggestion. */
   steering: string
-  /** Optional concrete rewrite. Shown only on user expand. */
+  /** Optional concrete rewrite. Rendered inline beneath steering. */
   alternate_wording?: string
+  /**
+   * Optional depth fields. Cap of 2 per signal — used sparingly,
+   * surfaced only when the user clicks to expand. Each must add a
+   * different angle, not restate consequence or steering.
+   */
+  why_it_matters?: string
+  audience_effect?: string
+  alternative_framing?: string
+  different_steering?: string
 }
 
 export interface RevealResult {

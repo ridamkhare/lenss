@@ -17,7 +17,16 @@ const SIGNAL_SHAPE = `A Signal has three required fields:
 - steering: ONE sentence. A small, specific suggestion. Actionable. Frame as choice, not prescription.
 
 A Signal MAY include:
-- alternate_wording: one concrete rewrite of the quoted phrase or sentence. Use sparingly — only when the steering is best shown rather than told.`
+- alternate_wording: one concrete rewrite of the quoted phrase or sentence. Use sparingly — only when the steering is best shown rather than told.
+
+A Signal MAY ALSO include up to TWO of these OPTIONAL DEPTH FIELDS — surfaced to the reader only on click. Each must add a genuinely different angle. NEVER include more than two per signal. NEVER restate the consequence or steering. If a depth field would be generic or wandering, omit it.
+
+- why_it_matters: one sentence. Names the underlying communication move in plainer terms — what kind of move this is. Not pseudo-depth, not philosophy.
+- audience_effect: one sentence. How a specific kind of reader (named concretely: "a skeptical reader", "a reader new to the topic", "a reader being persuaded") receives it differently.
+- alternative_framing: one sentence. A different way the same content could be framed, named concretely. Not vague.
+- different_steering: one sentence. A different small suggestion serving a different intent than the primary steering. Frame as a choice between intents.
+
+If none of these add a different angle, omit all of them. The default is no depth fields.`
 
 const ONE_PREFERRED_RULE = `THE ONE-PREFERRED RULE — one strong signal is always preferred over two weak ones.
 
