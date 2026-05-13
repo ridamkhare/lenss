@@ -64,7 +64,7 @@ export default function YoursPage() {
     <main className="mx-auto w-full max-w-reading px-6 sm:px-8 pt-20 sm:pt-28 pb-20">
       <header className="mb-12 sm:mb-14 flex items-center justify-between">
         <span className="font-sans text-[14px] font-medium tracking-wordmark text-ink lowercase">
-          lens
+          lenss
         </span>
         <ModeNav />
       </header>

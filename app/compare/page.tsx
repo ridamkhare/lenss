@@ -73,7 +73,7 @@ export default function ComparePage() {
           href="/"
           className="font-sans text-[14px] font-medium tracking-wordmark text-ink lowercase hover:text-ink-dimmed transition-colors duration-200"
         >
-          lens
+          lenss
         </a>
         <ModeNav />
       </header>
