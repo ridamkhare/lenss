@@ -49,6 +49,7 @@ export function SignalBlock({
   return (
     <section
       className="animate-reveal"
+      data-clarity-mask="True"
       style={{ animationDelay: `${delayMs}ms`, animationDuration: "520ms" }}
     >
       <div className="space-y-6">

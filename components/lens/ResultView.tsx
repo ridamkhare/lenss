@@ -21,6 +21,7 @@ export function ResultView({
     <div>
       <section
         className="animate-reveal"
+        data-clarity-mask="True"
         style={{ animationDuration: "500ms" }}
       >
         <p className="font-serif text-[15px] leading-[1.6] text-ink-dimmed whitespace-pre-wrap">
