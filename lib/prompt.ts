@@ -18,6 +18,14 @@ const SIGNAL_SHAPE = `A Signal has three required fields:
 
 A Signal MAY include:
 - alternate_wording: one concrete rewrite of the quoted phrase or sentence. Use sparingly — only when the steering is best shown rather than told.
+- perceptual_compression: a single, terse behavioral realization that compresses what the signal is observing into one immediately-felt insight. ONE sentence. Examples of the right register: "The conversation shifts toward products instead of the user's situation." / "The answer rewards readers who finish the whole response." / "The user is nudged toward comparison rather than decision."
+
+  Include perceptual_compression ONLY when:
+  - a meaningful behavioral shift is being named, AND
+  - the insight materially changes how the reader perceives the passage, AND
+  - the compression feels earned by what was just observed.
+
+  NEVER use it to summarize the consequence in different words — it must compress to a NEW level of immediacy. NEVER write slogans, motivational lines, dramatic phrasing, philosophy, or generic insight-speak ("at the end of the day", "truth is", "remember:"). If the signal stands without it, omit it. Most signals do not need it.
 
 A Signal MAY ALSO include up to TWO of these OPTIONAL DEPTH FIELDS — surfaced to the reader only on click. Each must add a genuinely different angle. NEVER include more than two TOTAL per signal across all options below. NEVER restate the consequence or steering. If a depth field would be generic or wandering, omit it.
 

@@ -139,6 +139,9 @@ const BANNED_PATTERNS: RegExp[] = [
   /\bthis (?:is|reads as) (?:a |an )?(?:factual|persuasive|technical|informational|opinion|expository|descriptive) (?:breakdown|piece|writing|text|passage)\b/i,
   /\bnothing here to read for communication\b/i,
   /\bnot communication style\b/i,
+
+  // Slogan / motivational openers — catch perceptual_compression drift
+  /^(?:remember[:,]|truth is[:,]?|at the end of the day[,]?|the bottom line is)/i,
 ]
 
 function hasBannedPhrase(text: string): boolean {
@@ -190,6 +193,9 @@ function passesSignalQuality(
     if (s.alternate_wording && hasBannedPhrase(s.alternate_wording)) {
       return false
     }
+    if (s.perceptual_compression && hasBannedPhrase(s.perceptual_compression)) {
+      return false
+    }
     if (!depthFieldsClean(s)) return false
   }
   return true
@@ -216,6 +222,9 @@ function passesCompareSignalQuality(
     )
       return false
     if (s.alternate_wording && hasBannedPhrase(s.alternate_wording)) {
+      return false
+    }
+    if (s.perceptual_compression && hasBannedPhrase(s.perceptual_compression)) {
       return false
     }
     if (!depthFieldsClean(s)) return false

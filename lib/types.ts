@@ -14,6 +14,13 @@ export interface Signal {
   /** Optional concrete rewrite. Rendered inline beneath steering. */
   alternate_wording?: string
   /**
+   * Optional perceptual-compression layer — one terse behavioral
+   * realization that compresses the signal into an immediate insight.
+   * Rendered inline (italic, lighter, subtly bordered). Not all
+   * signals warrant one.
+   */
+  perceptual_compression?: string
+  /**
    * Optional depth fields. Cap of 2 per signal — used sparingly,
    * surfaced only when the user clicks to expand. Each must add a
    * different angle, not restate consequence or steering.

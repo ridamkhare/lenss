@@ -84,6 +84,14 @@ export function SignalBlock({
           )}
         </div>
 
+        {signal.perceptual_compression && (
+          <div className="pl-4 border-l-2 border-divider/70">
+            <p className="font-serif italic text-[16px] leading-[1.6] text-ink-dimmed">
+              {signal.perceptual_compression}
+            </p>
+          </div>
+        )}
+
         {present.length > 0 && (
           <div className="pt-1">
             <div className="font-sans text-[11px] text-ink-dimmed">
