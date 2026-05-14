@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from "next/server"
-import { analyze } from "@/lib/analyze"
+import { NextRequest } from "next/server"
+import { analyzeStream, type StreamEvent } from "@/lib/analyze"
 import { detectInjection, detectShape } from "@/lib/heuristics"
 
 export const runtime = "nodejs"
@@ -8,49 +8,78 @@ const MIN_CHARS = 40
 const MAX_CHARS = 8000
 
 export async function POST(req: NextRequest) {
-  try {
-    const body = await req.json()
-    const text = typeof body?.text === "string" ? body.text.trim() : ""
+  const body = await req.json().catch(() => ({}))
+  const text = typeof body?.text === "string" ? body.text.trim() : ""
 
-    if (text.length === 0) {
-      return NextResponse.json(
-        { declined: true, reason: "No passage was provided." },
-        { status: 400 }
-      )
-    }
+  const encoder = new TextEncoder()
+  const stream = new ReadableStream({
+    async start(controller) {
+      const emit = (event: StreamEvent) =>
+        controller.enqueue(
+          encoder.encode(`data: ${JSON.stringify(event)}\n\n`)
+        )
 
-    if (text.length < MIN_CHARS) {
-      return NextResponse.json({
-        declined: true,
-        reason: "That passage is too short to reveal interpretive structure.",
-      })
-    }
+      try {
+        if (text.length === 0) {
+          emit({ type: "declined", reason: "No passage was provided." })
+          return
+        }
+        if (text.length < MIN_CHARS) {
+          emit({
+            type: "declined",
+            reason: "That passage is too short to reveal interpretive structure.",
+          })
+          return
+        }
+        if (text.length > MAX_CHARS) {
+          emit({
+            type: "declined",
+            reason:
+              "That passage is longer than the instrument was built for. Try a tighter excerpt.",
+          })
+          return
+        }
 
-    if (text.length > MAX_CHARS) {
-      return NextResponse.json({
-        declined: true,
-        reason:
-          "That passage is longer than the instrument was built for. Try a tighter excerpt.",
-      })
-    }
+        const injection = detectInjection(text)
+        if (injection) {
+          emit({ type: "declined", reason: injection.reason })
+          return
+        }
 
-    const injection = detectInjection(text)
-    if (injection) {
-      return NextResponse.json({ declined: true, reason: injection.reason })
-    }
+        const shape = detectShape(text)
+        if (shape) {
+          emit({ type: "declined", reason: shape.reason })
+          return
+        }
 
-    const shape = detectShape(text)
-    if (shape) {
-      return NextResponse.json({ declined: true, reason: shape.reason })
-    }
+        for await (const event of analyzeStream(text)) {
+          emit(event)
+          if (
+            event.type === "done" ||
+            event.type === "declined" ||
+            event.type === "error"
+          ) {
+            break
+          }
+        }
+      } catch (err) {
+        console.error("[reveal] error:", err)
+        emit({
+          type: "error",
+          reason: "Something went quiet on our side. Try again in a moment.",
+        })
+      } finally {
+        controller.close()
+      }
+    },
+  })
 
-    const result = await analyze(text)
-    return NextResponse.json(result)
-  } catch (err) {
-    console.error("[reveal] error:", err)
-    return NextResponse.json(
-      { error: "Something went quiet on our side. Try again in a moment." },
-      { status: 500 }
-    )
-  }
+  return new Response(stream, {
+    headers: {
+      "Content-Type": "text/event-stream; charset=utf-8",
+      "Cache-Control": "no-cache, no-transform",
+      Connection: "keep-alive",
+      "X-Accel-Buffering": "no",
+    },
+  })
 }

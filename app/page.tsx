@@ -6,10 +6,16 @@ import { ResultView } from "@/components/lens/ResultView"
 import { MessageView } from "@/components/lens/MessageView"
 import { ModeNav } from "@/components/lens/ModeNav"
 import { Footer } from "@/components/lens/Footer"
-import type { RevealResult, AnalyzeResponse } from "@/lib/types"
-import { isDeclined } from "@/lib/types"
+import { streamRequest } from "@/lib/streamClient"
+import type { RevealResult } from "@/lib/types"
 
-type Status = "empty" | "revealing" | "shown" | "declined" | "error"
+type Status =
+  | "empty"
+  | "revealing" // model called, no signals yet
+  | "streaming" // first signal arrived, more may follow
+  | "shown" // stream complete
+  | "declined"
+  | "error"
 
 export default function Page() {
   const [status, setStatus] = useState<Status>("empty")
@@ -22,30 +28,33 @@ export default function Page() {
     if (trimmed.length === 0) return
 
     setStatus("revealing")
+    setResult({ signals: [] })
+    setMessage("")
 
     try {
-      const res = await fetch("/api/reveal", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: trimmed }),
-      })
-
-      if (!res.ok && res.status !== 400) {
-        setMessage("That didn't come through. Try again in a moment.")
-        setStatus("error")
-        return
+      for await (const event of streamRequest("/api/reveal", {
+        text: trimmed,
+      })) {
+        if (event.type === "signal") {
+          setResult((prev) => ({
+            signals: [...(prev?.signals || []), event.signal],
+          }))
+          setStatus((prev) => (prev === "revealing" ? "streaming" : prev))
+        } else if (event.type === "declined") {
+          setMessage(event.reason)
+          setStatus("declined")
+          return
+        } else if (event.type === "error") {
+          setMessage(event.reason)
+          setStatus((prev) =>
+            prev === "streaming" || prev === "shown" ? "shown" : "error"
+          )
+          return
+        } else if (event.type === "done") {
+          setStatus("shown")
+          return
+        }
       }
-
-      const data: AnalyzeResponse = await res.json()
-
-      if (isDeclined(data)) {
-        setMessage(data.reason)
-        setStatus("declined")
-        return
-      }
-
-      setResult(data)
-      setStatus("shown")
     } catch {
       setMessage("That didn't come through. Try again in a moment.")
       setStatus("error")
@@ -60,6 +69,11 @@ export default function Page() {
   }
 
   const isEmpty = status === "empty" || status === "revealing"
+  const isResult =
+    (status === "streaming" || status === "shown") &&
+    result !== null &&
+    result.signals.length > 0
+  const streaming = status === "streaming"
 
   return (
     <main className="mx-auto w-full max-w-reading px-6 sm:px-8 pt-20 sm:pt-28 pb-20">
@@ -85,8 +99,13 @@ export default function Page() {
         />
       )}
 
-      {status === "shown" && result && (
-        <ResultView source={text} result={result} onReset={handleReset} />
+      {isResult && result && (
+        <ResultView
+          source={text}
+          result={result}
+          onReset={handleReset}
+          streaming={streaming}
+        />
       )}
 
       {status === "declined" && (

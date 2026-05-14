@@ -477,3 +477,281 @@ function mockSelf(text: string): SelfResponse {
   }
 }
 
+/* ────────────────────────────────────────────────────────────────────
+   Streaming layer
+   ────────────────────────────────────────────────────────────────────
+   The non-streaming functions above wait for the model to assemble a
+   full JSON response, then validate and (sometimes) retry. That makes
+   perceived latency ~3x the actual latency, because Opus generates at
+   ~25-35 tok/s and a full response can run 600-1000 tokens.
+
+   The streaming layer below:
+   - Pipes raw tokens out of the LLM
+   - Incrementally parses signal objects from the buffer as they
+     complete (brace-counter — robust to prose preceding the JSON
+     and to internal escaped quotes)
+   - Validates each signal individually and emits it via an
+     async-generator of StreamEvent objects
+   - Drops the retry-once pattern (impossible mid-stream); trusts the
+     prompt + per-signal validator to maintain quality
+   ──────────────────────────────────────────────────────────────────── */
+
+export type StreamEvent =
+  | { type: "signal"; signal: Signal }
+  | { type: "declined"; reason: string }
+  | { type: "error"; reason: string }
+  | { type: "done" }
+
+async function* callModelStream(
+  systemPrompt: string,
+  userMessage: string,
+  maxTokens: number,
+  modelOverride?: string
+): AsyncGenerator<string, void, void> {
+  if (openRouterClient) {
+    const stream = await openRouterClient.chat.completions.create({
+      model: modelOverride || OPENROUTER_MODEL,
+      max_tokens: maxTokens,
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userMessage },
+      ],
+      stream: true,
+    })
+    for await (const chunk of stream) {
+      const delta = chunk.choices[0]?.delta?.content
+      if (typeof delta === "string" && delta.length > 0) yield delta
+    }
+    return
+  }
+  if (process.env.ANTHROPIC_API_KEY) {
+    const anthropic = new Anthropic()
+    const stream = anthropic.messages.stream({
+      model: "claude-sonnet-4-5",
+      max_tokens: maxTokens,
+      system: systemPrompt,
+      messages: [{ role: "user", content: userMessage }],
+    })
+    for await (const event of stream) {
+      if (
+        event.type === "content_block_delta" &&
+        event.delta.type === "text_delta"
+      ) {
+        yield event.delta.text
+      }
+    }
+  }
+}
+
+/**
+ * Walks the partial JSON buffer with a depth-aware brace counter and
+ * returns every complete top-level object that lives inside the
+ * `"signals": [ ... ]` array. Robust to: prose preceding the JSON,
+ * escaped quotes inside strings, and nested objects (for depth fields).
+ */
+function extractCompletedSignals(buffer: string): unknown[] {
+  const arrayKey = buffer.indexOf('"signals"')
+  if (arrayKey === -1) return []
+  const bracketIdx = buffer.indexOf("[", arrayKey)
+  if (bracketIdx === -1) return []
+
+  let i = bracketIdx + 1
+  let depth = 0
+  let objStart = -1
+  let inString = false
+  let escaped = false
+  const signals: unknown[] = []
+
+  while (i < buffer.length) {
+    const c = buffer[i]
+    if (escaped) {
+      escaped = false
+    } else if (c === "\\") {
+      escaped = true
+    } else if (c === '"') {
+      inString = !inString
+    } else if (!inString) {
+      if (c === "{") {
+        if (depth === 0) objStart = i
+        depth++
+      } else if (c === "}") {
+        depth--
+        if (depth === 0 && objStart >= 0) {
+          try {
+            signals.push(JSON.parse(buffer.slice(objStart, i + 1)))
+          } catch {
+            /* ignore malformed object — wait for more bytes */
+          }
+          objStart = -1
+        }
+      } else if (c === "]" && depth === 0) {
+        break
+      }
+    }
+    i++
+  }
+  return signals
+}
+
+/**
+ * Detects a {"declined": true, "reason": "..."} response before the
+ * stream completes, so we can short-circuit refusals quickly.
+ */
+function detectDeclined(
+  buffer: string
+): { declined: true; reason: string } | null {
+  if (!/"declined"\s*:\s*true/i.test(buffer)) return null
+  const m = buffer.match(/"reason"\s*:\s*"((?:[^"\\]|\\.)*)"/)
+  if (!m) return null
+  return { declined: true, reason: m[1] }
+}
+
+function validateSingleSignal(
+  raw: unknown,
+  sources: string[]
+): Signal | null {
+  if (!raw || typeof raw !== "object") return null
+  const s = raw as Record<string, unknown>
+  if (
+    typeof s.observation !== "string" ||
+    typeof s.consequence !== "string" ||
+    typeof s.steering !== "string"
+  ) {
+    return null
+  }
+  const anchored = sources.some((src) =>
+    containsAnchorFromSource(s.observation as string, src)
+  )
+  if (!anchored) return null
+  if (
+    hasBannedPhrase(s.observation) ||
+    hasBannedPhrase(s.consequence) ||
+    hasBannedPhrase(s.steering)
+  ) {
+    return null
+  }
+  if (
+    typeof s.alternate_wording === "string" &&
+    hasBannedPhrase(s.alternate_wording)
+  ) {
+    return null
+  }
+  if (
+    typeof s.perceptual_compression === "string" &&
+    hasBannedPhrase(s.perceptual_compression)
+  ) {
+    return null
+  }
+  // Depth fields cap and banned check
+  const present = DEPTH_KEYS.filter((k) => typeof s[k] === "string" && s[k])
+  if (present.length > 2) return null
+  for (const k of present) {
+    if (hasBannedPhrase(s[k] as string)) return null
+  }
+  return clampDepth(s as unknown as Signal)
+}
+
+async function* runStream(
+  systemPrompt: string,
+  userMessage: string,
+  sources: string[],
+  maxTokens: number,
+  modelOverride?: string
+): AsyncGenerator<StreamEvent, void, void> {
+  let buffer = ""
+  let emittedCount = 0
+  let signalsEmitted = 0
+  let declinedSeen = false
+
+  try {
+    for await (const chunk of callModelStream(
+      systemPrompt,
+      userMessage,
+      maxTokens,
+      modelOverride
+    )) {
+      buffer += chunk
+
+      if (!declinedSeen) {
+        const decl = detectDeclined(buffer)
+        if (decl) {
+          declinedSeen = true
+          yield { type: "declined", reason: decl.reason }
+          return
+        }
+      }
+
+      const candidates = extractCompletedSignals(buffer)
+      for (let i = emittedCount; i < candidates.length; i++) {
+        emittedCount++
+        if (signalsEmitted >= 4) break
+        const valid = validateSingleSignal(candidates[i], sources)
+        if (valid) {
+          signalsEmitted++
+          yield { type: "signal", signal: valid }
+        }
+      }
+    }
+
+    if (!declinedSeen && signalsEmitted === 0) {
+      yield {
+        type: "error",
+        reason: "The reading didn't come through cleanly. Try again.",
+      }
+      return
+    }
+
+    yield { type: "done" }
+  } catch {
+    yield {
+      type: "error",
+      reason: "Something went quiet on our side. Try again in a moment.",
+    }
+  }
+}
+
+export async function* analyzeStream(
+  text: string
+): AsyncGenerator<StreamEvent, void, void> {
+  if (!hasModelAccess()) {
+    yield* mockToStream(mockAnalyze(text))
+    return
+  }
+  yield* runStream(SYSTEM_PROMPT, text, [text], 1200)
+}
+
+export async function* analyzeCompareStream(
+  a: string,
+  b: string
+): AsyncGenerator<StreamEvent, void, void> {
+  if (!hasModelAccess()) {
+    yield* mockToStream(mockCompare(a, b))
+    return
+  }
+  const userContent = `PASSAGE A:\n${a}\n\n---\n\nPASSAGE B:\n${b}`
+  yield* runStream(COMPARE_SYSTEM_PROMPT, userContent, [a, b], 1200)
+}
+
+export async function* analyzeSelfStream(
+  text: string
+): AsyncGenerator<StreamEvent, void, void> {
+  if (!hasModelAccess()) {
+    yield* mockToStream(mockSelf(text))
+    return
+  }
+  yield* runStream(SELF_SYSTEM_PROMPT, text, [text], 800, OPENROUTER_SELF_MODEL)
+}
+
+async function* mockToStream(
+  result: RevealResult | CompareResult | SelfResponse
+): AsyncGenerator<StreamEvent, void, void> {
+  if ("declined" in result) {
+    yield { type: "declined", reason: result.reason }
+    return
+  }
+  for (const s of result.signals) {
+    yield { type: "signal", signal: s }
+  }
+  yield { type: "done" }
+}
+

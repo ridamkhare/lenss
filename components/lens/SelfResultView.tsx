@@ -10,13 +10,13 @@ export function SelfResultView({
   source,
   result,
   onReset,
+  streaming = false,
 }: {
   source: string
   result: SelfReadingResult
   onReset: () => void
+  streaming?: boolean
 }) {
-  const lastDelay = 260 + result.signals.length * 220
-
   return (
     <div>
       <section
@@ -40,20 +40,27 @@ export function SelfResultView({
             {i > 0 && (
               <hr className="mb-12 border-0 border-t border-divider" />
             )}
-            <SignalBlock signal={s} delayMs={260 + i * 220} />
+            <SignalBlock signal={s} delayMs={0} />
           </div>
         ))}
       </div>
 
-      <div
-        className="mt-16 flex flex-wrap justify-center items-center gap-x-8 gap-y-3 animate-reveal"
-        style={{ animationDelay: `${lastDelay + 600}ms` }}
-      >
-        <SaveButton onSave={() => saveSelf(source, result)} />
-        <Button variant="ghost" size="link" onClick={onReset}>
-          Another
-        </Button>
-      </div>
+      {streaming && (
+        <div className="mt-12">
+          <span className="font-sans text-[12px] text-ink-dimmed animate-breathe">
+            Still reading
+          </span>
+        </div>
+      )}
+
+      {!streaming && (
+        <div className="mt-16 flex flex-wrap justify-center items-center gap-x-8 gap-y-3 animate-reveal">
+          <SaveButton onSave={() => saveSelf(source, result)} />
+          <Button variant="ghost" size="link" onClick={onReset}>
+            Another
+          </Button>
+        </div>
+      )}
     </div>
   )
 }
