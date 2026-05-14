@@ -29,8 +29,8 @@ const config: Config = {
       },
       keyframes: {
         reveal: {
-          from: { opacity: "0", transform: "translateY(8px)" },
-          to: { opacity: "1", transform: "translateY(0)" },
+          from: { opacity: "0" },
+          to: { opacity: "1" },
         },
         breathe: {
           "0%, 100%": { opacity: "0.55" },

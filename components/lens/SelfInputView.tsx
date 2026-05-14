@@ -2,6 +2,7 @@
 
 import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
+import { LoadingPhrase } from "./LoadingPhrase"
 
 export function SelfInputView({
   value,
@@ -38,7 +39,7 @@ export function SelfInputView({
       <div className="mt-8 flex items-center justify-between">
         <span className="font-sans text-[12px] text-ink-dimmed">
           {reading ? (
-            <span className="animate-breathe">Reading</span>
+            <LoadingPhrase initial="Reading" />
           ) : (
             <>
               <kbd className="font-sans">⌘</kbd>

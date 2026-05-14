@@ -26,6 +26,20 @@ const DEPTH_FIELDS: { key: DepthKey; trigger: string; label: string }[] = [
   { key: "conversational_trajectory", trigger: "conversational trajectory", label: "Conversational trajectory" },
 ]
 
+/**
+ * Per-section reveal pacing inside a signal. Each section fades in
+ * with its own animation-delay so the reader sees Observation first,
+ * then Consequence, then Steering, then any inline secondary layers —
+ * never all at once, never racing. Each section animates as a whole
+ * (no token-by-token, no partial sentences). The duration is long
+ * enough to feel composed.
+ */
+const SECTION_DURATION_MS = 700
+const STEP_MS = 700 // pause between sections
+const ALT_OFFSET_MS = 350 // alt wording fades in after steering settles
+const COMPRESSION_OFFSET_MS = 1100 // crystallization lands after steering finishes
+const DEPTH_OFFSET_MS = 1500 // depth triggers appear last, quietly
+
 export function SignalBlock({
   signal,
   delayMs,
@@ -46,14 +60,24 @@ export function SignalBlock({
     })
   }
 
+  const obsDelay = delayMs
+  const conDelay = delayMs + STEP_MS
+  const steerDelay = delayMs + STEP_MS * 2
+  const altDelay = steerDelay + ALT_OFFSET_MS
+  const compDelay = steerDelay + COMPRESSION_OFFSET_MS
+  const depthDelay = steerDelay + DEPTH_OFFSET_MS
+
   return (
-    <section
-      className="animate-reveal"
-      data-clarity-mask="True"
-      style={{ animationDelay: `${delayMs}ms`, animationDuration: "520ms" }}
-    >
+    <section data-clarity-mask="True">
       <div className="space-y-6">
-        <div>
+        <div
+          className="animate-reveal"
+          style={{
+            animationDelay: `${obsDelay}ms`,
+            animationDuration: `${SECTION_DURATION_MS}ms`,
+            animationFillMode: "both",
+          }}
+        >
           <p className="font-sans text-[10px] font-medium uppercase tracking-label text-ink-dimmed mb-2">
             Observation
           </p>
@@ -62,7 +86,14 @@ export function SignalBlock({
           </p>
         </div>
 
-        <div>
+        <div
+          className="animate-reveal"
+          style={{
+            animationDelay: `${conDelay}ms`,
+            animationDuration: `${SECTION_DURATION_MS}ms`,
+            animationFillMode: "both",
+          }}
+        >
           <p className="font-sans text-[10px] font-medium uppercase tracking-label text-ink-dimmed mb-2">
             Consequence
           </p>
@@ -71,7 +102,14 @@ export function SignalBlock({
           </p>
         </div>
 
-        <div>
+        <div
+          className="animate-reveal"
+          style={{
+            animationDelay: `${steerDelay}ms`,
+            animationDuration: `${SECTION_DURATION_MS}ms`,
+            animationFillMode: "both",
+          }}
+        >
           <p className="font-sans text-[10px] font-medium uppercase tracking-label text-ink-dimmed mb-2">
             Steering
           </p>
@@ -79,14 +117,28 @@ export function SignalBlock({
             {signal.steering}
           </p>
           {signal.alternate_wording && (
-            <p className="mt-3 pl-6 sm:pl-8 font-serif italic text-[15px] leading-[1.6] text-ink-dimmed">
+            <p
+              className="mt-3 pl-6 sm:pl-8 font-serif italic text-[15px] leading-[1.6] text-ink-dimmed animate-reveal"
+              style={{
+                animationDelay: `${altDelay}ms`,
+                animationDuration: `${SECTION_DURATION_MS}ms`,
+                animationFillMode: "both",
+              }}
+            >
               {signal.alternate_wording}
             </p>
           )}
         </div>
 
         {signal.perceptual_compression && (
-          <div className="pl-4 border-l-2 border-divider/70">
+          <div
+            className="pl-4 border-l-2 border-divider/70 animate-reveal"
+            style={{
+              animationDelay: `${compDelay}ms`,
+              animationDuration: `${SECTION_DURATION_MS}ms`,
+              animationFillMode: "both",
+            }}
+          >
             <p className="font-serif italic text-[16px] leading-[1.6] text-ink-dimmed">
               {signal.perceptual_compression}
             </p>
@@ -94,7 +146,14 @@ export function SignalBlock({
         )}
 
         {present.length > 0 && (
-          <div className="pt-1">
+          <div
+            className="pt-1 animate-reveal"
+            style={{
+              animationDelay: `${depthDelay}ms`,
+              animationDuration: `${SECTION_DURATION_MS}ms`,
+              animationFillMode: "both",
+            }}
+          >
             <div className="font-sans text-[11px] text-ink-dimmed">
               {present.map((f, i) => {
                 const isOpen = revealed.has(f.key)

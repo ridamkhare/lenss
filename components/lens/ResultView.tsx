@@ -3,6 +3,7 @@
 import { Button } from "@/components/ui/button"
 import { SaveButton } from "./SaveButton"
 import { SignalBlock } from "./SignalBlock"
+import { LoadingPhrase } from "./LoadingPhrase"
 import { saveReveal } from "@/lib/storage"
 import type { RevealResult } from "@/lib/types"
 
@@ -47,9 +48,7 @@ export function ResultView({
 
       {streaming && (
         <div className="mt-12">
-          <span className="font-sans text-[12px] text-ink-dimmed animate-breathe">
-            Still reading
-          </span>
+          <LoadingPhrase initial="Still reading" />
         </div>
       )}
 
