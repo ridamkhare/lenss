@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { analyze } from "@/lib/analyze"
-import { detectShape } from "@/lib/heuristics"
+import { detectInjection, detectShape } from "@/lib/heuristics"
 
 export const runtime = "nodejs"
 
@@ -32,6 +32,11 @@ export async function POST(req: NextRequest) {
         reason:
           "That passage is longer than the instrument was built for. Try a tighter excerpt.",
       })
+    }
+
+    const injection = detectInjection(text)
+    if (injection) {
+      return NextResponse.json({ declined: true, reason: injection.reason })
     }
 
     const shape = detectShape(text)

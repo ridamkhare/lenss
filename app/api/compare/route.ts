@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { analyzeCompare } from "@/lib/analyze"
-import { detectShape, wordSetSimilarity } from "@/lib/heuristics"
+import { detectInjection, detectShape, wordSetSimilarity } from "@/lib/heuristics"
 
 const PARAPHRASE_THRESHOLD = 0.6
 
@@ -41,6 +41,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({
         declined: true,
         reason: "These are the same passage.",
+      })
+    }
+
+    const injectionA = detectInjection(a)
+    const injectionB = detectInjection(b)
+    if (injectionA || injectionB) {
+      return NextResponse.json({
+        declined: true,
+        reason:
+          "One of the passages reads as an instruction to the instrument, not a passage to read.",
       })
     }
 

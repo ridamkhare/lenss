@@ -142,6 +142,27 @@ const BANNED_PATTERNS: RegExp[] = [
 
   // Slogan / motivational openers — catch perceptual_compression drift
   /^(?:remember[:,]|truth is[:,]?|at the end of the day[,]?|the bottom line is)/i,
+
+  // Prompt-leakage signatures — strings that should NEVER appear in a
+  // legitimate analysis. If the model has been tricked into echoing the
+  // system prompt, these distinctive markers catch it. None of them
+  // appear in normal human prose.
+  /\b(perceptual_compression|hidden_intent_branching|alternate_reader_realities|conversational_trajectory|likely_next_concerns|why_it_matters|audience_effect|alternative_framing|different_steering|alternate_wording|framing_pull)\b/,
+  /\bMATERIALITY RULE\b/,
+  /\bSIGNAL[_ ]SHAPE\b/,
+  /\bBANNED VOCABULARY\b/,
+  /\bONE[- ]PREFERRED RULE\b/,
+  /\bVOICE RULES\b/,
+  /\bREFUSAL RULES\b/,
+  /\bCRITICAL VOICE RULES\b/,
+  /\bCOMMUNICATION TENDENCIES\b/,
+  /\bOPTIONAL DEPTH FIELDS\b/,
+  /\bPRIMARY LAYER\b/,
+  /\bSECONDARY LAYER\b/,
+  /communication-feedback instrument/i,
+  /Return JSON with one field: signals/i,
+  /verbatim phrase in double quotes/i,
+  /one strong signal is always preferred/i,
 ]
 
 function hasBannedPhrase(text: string): boolean {
