@@ -6,6 +6,7 @@ import { ResultView } from "@/components/lens/ResultView"
 import { MessageView } from "@/components/lens/MessageView"
 import { ModeNav } from "@/components/lens/ModeNav"
 import { Footer } from "@/components/lens/Footer"
+import { DeeperLayer } from "@/components/lens/DeeperLayer"
 import { streamRequest } from "@/lib/streamClient"
 import type { RevealResult } from "@/lib/types"
 
@@ -106,6 +107,10 @@ export default function Page() {
           onReset={handleReset}
           streaming={streaming}
         />
+      )}
+
+      {status === "shown" && result && result.signals.length > 0 && (
+        <DeeperLayer mode="read" source={text} signals={result.signals} />
       )}
 
       {status === "declined" && (
