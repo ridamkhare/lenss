@@ -1,6 +1,7 @@
-import { NextRequest } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import { analyzeStream, type StreamEvent } from "@/lib/analyze"
 import { detectInjection, detectShape } from "@/lib/heuristics"
+import { checkSecurity } from "@/lib/security"
 
 export const runtime = "nodejs"
 
@@ -8,6 +9,14 @@ const MIN_CHARS = 40
 const MAX_CHARS = 8000
 
 export async function POST(req: NextRequest) {
+  const sec = checkSecurity(req)
+  if (!sec.ok) {
+    return NextResponse.json(
+      { error: sec.reason || "forbidden" },
+      { status: sec.status || 403 }
+    )
+  }
+
   const body = await req.json().catch(() => ({}))
   const text = typeof body?.text === "string" ? body.text.trim() : ""
 
