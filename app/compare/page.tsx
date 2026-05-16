@@ -6,6 +6,7 @@ import { CompareResultView } from "@/components/lens/CompareResultView"
 import { MessageView } from "@/components/lens/MessageView"
 import { ModeNav } from "@/components/lens/ModeNav"
 import { Footer } from "@/components/lens/Footer"
+import { DeeperLayer } from "@/components/lens/DeeperLayer"
 import { takeComparePrefill } from "@/lib/storage"
 import { streamRequest } from "@/lib/streamClient"
 import type { CompareResult } from "@/lib/types"
@@ -120,6 +121,15 @@ export default function ComparePage() {
           result={result}
           onReset={handleReset}
           streaming={streaming}
+        />
+      )}
+
+      {status === "shown" && result && result.signals.length > 0 && (
+        <DeeperLayer
+          mode="compare"
+          sourceA={a}
+          sourceB={b}
+          signals={result.signals}
         />
       )}
 
