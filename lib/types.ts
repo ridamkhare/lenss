@@ -9,28 +9,29 @@ export interface Signal {
   observation: string
   /** Likely effect on a reader. Pragmatic, concrete. */
   consequence: string
-  /** A small, specific steering suggestion. */
-  steering: string
-  /** Optional concrete rewrite. Rendered inline beneath steering. */
+  /**
+   * EXPERIMENT: a differently-shaped rewrite of the passage. Not a
+   * polish, paraphrase, or "improvement" — a genuinely different
+   * communicative posture that creates a different conversational
+   * future. Preserves the factual content; changes the shape.
+   *
+   * Only required in the experiment branch. Optional in the schema
+   * for graceful degradation against older archived items.
+   */
+  alternate_answer?: {
+    text: string
+    tradeoff?: string
+  }
+  /* Legacy fields kept optional so older archived items still
+     deserialize. The experiment prompt no longer produces these. */
+  steering?: string
   alternate_wording?: string
-  /**
-   * Optional perceptual-compression layer — one terse behavioral
-   * realization that compresses the signal into an immediate insight.
-   * Rendered inline (italic, lighter, subtly bordered). Not all
-   * signals warrant one.
-   */
   perceptual_compression?: string
-  /**
-   * Optional depth fields. Cap of 2 per signal — used sparingly,
-   * surfaced only when the user clicks to expand. Each must add a
-   * different angle, not restate consequence or steering.
-   */
   why_it_matters?: string
   audience_effect?: string
   alternative_framing?: string
   different_steering?: string
   likely_next_concerns?: string
-  /** Secondary inference layer — bounded, observable, never speculative. */
   hidden_intent_branching?: string
   framing_pull?: string
   alternate_reader_realities?: string

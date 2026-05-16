@@ -642,7 +642,6 @@ function validateSingleSignal(
   ) {
     return null
   }
-  // Depth fields cap and banned check
   const present = DEPTH_KEYS.filter((k) => typeof s[k] === "string" && s[k])
   if (present.length > 2) return null
   for (const k of present) {
@@ -651,11 +650,58 @@ function validateSingleSignal(
   return clampDepth(s as unknown as Signal)
 }
 
+/** Experiment validator: requires alternate_answer.text instead of steering. */
+function validateExperimentSignal(
+  raw: unknown,
+  sources: string[]
+): Signal | null {
+  if (!raw || typeof raw !== "object") return null
+  const s = raw as Record<string, unknown>
+  if (
+    typeof s.observation !== "string" ||
+    typeof s.consequence !== "string"
+  ) {
+    return null
+  }
+  if (!s.alternate_answer || typeof s.alternate_answer !== "object") {
+    return null
+  }
+  const alt = s.alternate_answer as Record<string, unknown>
+  if (typeof alt.text !== "string" || alt.text.trim().length < 20) {
+    return null
+  }
+  const anchored = sources.some((src) =>
+    containsAnchorFromSource(s.observation as string, src)
+  )
+  if (!anchored) return null
+  if (
+    hasBannedPhrase(s.observation as string) ||
+    hasBannedPhrase(s.consequence as string) ||
+    hasBannedPhrase(alt.text as string)
+  ) {
+    return null
+  }
+  if (typeof alt.tradeoff === "string" && hasBannedPhrase(alt.tradeoff)) {
+    return null
+  }
+  return {
+    observation: s.observation as string,
+    consequence: s.consequence as string,
+    alternate_answer: {
+      text: alt.text as string,
+      tradeoff:
+        typeof alt.tradeoff === "string" ? alt.tradeoff : undefined,
+    },
+  }
+}
+
 async function* runStream(
   systemPrompt: string,
   userMessage: string,
   sources: string[],
   maxTokens: number,
+  validator: (raw: unknown, sources: string[]) => Signal | null,
+  maxSignals: number,
   modelOverride?: string
 ): AsyncGenerator<StreamEvent, void, void> {
   let buffer = ""
@@ -684,8 +730,8 @@ async function* runStream(
       const candidates = extractCompletedSignals(buffer)
       for (let i = emittedCount; i < candidates.length; i++) {
         emittedCount++
-        if (signalsEmitted >= 4) break
-        const valid = validateSingleSignal(candidates[i], sources)
+        if (signalsEmitted >= maxSignals) break
+        const valid = validator(candidates[i], sources)
         if (valid) {
           signalsEmitted++
           yield { type: "signal", signal: valid }
@@ -717,7 +763,16 @@ export async function* analyzeStream(
     yield* mockToStream(mockAnalyze(text))
     return
   }
-  yield* runStream(SYSTEM_PROMPT, text, [text], 1200)
+  // Experiment: read mode uses the alternate-answer validator and
+  // caps at 2 signals (usually 1) per THE ONE-SIGNAL RULE.
+  yield* runStream(
+    SYSTEM_PROMPT,
+    text,
+    [text],
+    1800,
+    validateExperimentSignal,
+    2
+  )
 }
 
 export async function* analyzeCompareStream(
@@ -729,7 +784,14 @@ export async function* analyzeCompareStream(
     return
   }
   const userContent = `PASSAGE A:\n${a}\n\n---\n\nPASSAGE B:\n${b}`
-  yield* runStream(COMPARE_SYSTEM_PROMPT, userContent, [a, b], 1200)
+  yield* runStream(
+    COMPARE_SYSTEM_PROMPT,
+    userContent,
+    [a, b],
+    1200,
+    validateSingleSignal,
+    4
+  )
 }
 
 export async function* analyzeSelfStream(
@@ -739,7 +801,15 @@ export async function* analyzeSelfStream(
     yield* mockToStream(mockSelf(text))
     return
   }
-  yield* runStream(SELF_SYSTEM_PROMPT, text, [text], 800, OPENROUTER_SELF_MODEL)
+  yield* runStream(
+    SELF_SYSTEM_PROMPT,
+    text,
+    [text],
+    800,
+    validateSingleSignal,
+    4,
+    OPENROUTER_SELF_MODEL
+  )
 }
 
 async function* mockToStream(
