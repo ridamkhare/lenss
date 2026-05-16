@@ -44,12 +44,14 @@ const NON_DUPLICATION_RULE = `NON-DUPLICATION — the deeper line must add a dis
 
 const KINDS = `KINDS — pick whichever of these adds the most distinct value. Do not label the output with the kind. Just produce the line.
 
-- alternate answer: what a different but equally valid answer to the same question would foreground
 - hidden assumption: what the passage takes for granted without naming
+- emotional pressure shift: how the emotional posture moves through the passage — toward, away, escalating, softening, holding back — read from cadence, framing, and what's left out
 - framing tradeoff: what the chosen framing wins and what it gives up
+- what the answer quietly avoids: what is structurally routed around
 - another plausible reading: how the same content reads under a different priority
-- conversational trajectory: where the passage steers what follows
-- what the answer quietly avoids: what is structurally routed around`
+- alternate answer: what a different but equally valid answer to the same question would foreground
+
+VARY — across different reads, the kind picked should vary. Do not default to "alternate answer" or "another plausible reading" unless the passage genuinely makes them the most distinct angle. If a hidden assumption, an emotional pressure shift, a framing tradeoff, or what's avoided is the strongest read, pick that one. Position in this list is not preference.`
 
 const REFUSAL_RULES = `REFUSAL — return {"declined": true, "reason": "<one calm sentence>"} when:
 
