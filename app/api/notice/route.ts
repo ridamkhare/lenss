@@ -3,10 +3,10 @@ import Anthropic from "@anthropic-ai/sdk"
 import OpenAI from "openai"
 import { checkSecurity } from "@/lib/security"
 import {
-  DEEPER_READ_PROMPT,
-  DEEPER_SELF_PROMPT,
-  DEEPER_COMPARE_PROMPT,
-} from "@/lib/deeperPrompt"
+  NOTICE_READ_PROMPT,
+  NOTICE_SELF_PROMPT,
+  NOTICE_COMPARE_PROMPT,
+} from "@/lib/noticePrompt"
 import type { Signal } from "@/lib/types"
 
 export const runtime = "nodejs"
@@ -122,11 +122,21 @@ const BANNED_PATTERNS: RegExp[] = [
   /\b(epistemic|ontological|hegemonic|problematizes|interrogates|valorizes|instantiates)\b/i,
   /\b(perhaps|arguably|it could be (?:said|argued)|some might say|one could argue)\b/i,
   /^(?:remember[:,]|truth is[:,]?|at the end of the day[,]?|the bottom line is)/i,
+  // mechanism vocabulary — the systemic-sounding words v3 bans
+  /\binstalls? (?:a |an )?\w+ (?:trigger|point|mechanism)/i,
+  /\bescalation point\b/i,
+  /\bconditional escalation\b/i,
+  /\binstantiates?\b/i,
+  /\benacts? (?:a |an )/i,
+  /\boperates as (?:a |an )/i,
   // prompt-leakage signatures
   /\b(perceptual_compression|hidden_intent_branching|alternate_reader_realities|conversational_trajectory|likely_next_concerns|why_it_matters|audience_effect|alternative_framing|different_steering|alternate_wording|framing_pull)\b/,
   /\bMATERIALITY RULE\b/,
   /\bSIGNAL[_ ]SHAPE\b/,
   /\bBANNED VOCABULARY\b/,
+  /\bMECHANISM VOCABULARY\b/,
+  /\bPLAIN LANGUAGE FLOOR\b/,
+  /\bWHAT QUALIFIES AS AN INTERACTION DYNAMIC\b/,
   /\bVOICE RULES\b/,
   /\bREFUSAL RULES\b/,
   /\bNON-DUPLICATION\b/,
@@ -145,29 +155,29 @@ function hasBannedPhrase(text: string): boolean {
 
 type Mode = "read" | "yours" | "compare"
 
-interface DeeperRequestBase {
+interface NoticeRequestBase {
   mode: Mode
   signals?: Signal[]
 }
-interface DeeperRequestSingle extends DeeperRequestBase {
+interface NoticeRequestSingle extends NoticeRequestBase {
   mode: "read" | "yours"
   text: string
 }
-interface DeeperRequestCompare extends DeeperRequestBase {
+interface NoticeRequestCompare extends NoticeRequestBase {
   mode: "compare"
   a: string
   b: string
 }
-type DeeperRequest = DeeperRequestSingle | DeeperRequestCompare
+type NoticeRequest = NoticeRequestSingle | NoticeRequestCompare
 
-interface DeeperResult {
-  deeper: string
+interface NoticeResult {
+  notice: string
 }
-interface DeeperDeclined {
+interface NoticeDeclined {
   declined: true
   reason: string
 }
-type DeeperResponse = DeeperResult | DeeperDeclined
+type NoticeResponse = NoticeResult | NoticeDeclined
 
 /* ────────────────────────────────────────────────────────────────────
    Handler
@@ -183,14 +193,14 @@ export async function POST(req: NextRequest) {
   }
 
   // Independent V2 kill switch — runtime, no rebuild required.
-  if (process.env.LENS_DISABLE_DEEPER === "true") {
+  if (process.env.LENS_DISABLE_NOTICE === "true") {
     return NextResponse.json(
       { declined: true, reason: "Service temporarily paused." },
       { status: 503 }
     )
   }
 
-  const body = (await req.json().catch(() => ({}))) as Partial<DeeperRequest>
+  const body = (await req.json().catch(() => ({}))) as Partial<NoticeRequest>
   const mode: Mode | undefined = body.mode
 
   if (mode !== "read" && mode !== "yours" && mode !== "compare") {
@@ -210,7 +220,7 @@ export async function POST(req: NextRequest) {
   let modelOverride: string | undefined
 
   if (mode === "compare") {
-    const cb = body as Partial<DeeperRequestCompare>
+    const cb = body as Partial<NoticeRequestCompare>
     const a = typeof cb.a === "string" ? cb.a.trim() : ""
     const b = typeof cb.b === "string" ? cb.b.trim() : ""
     if (
@@ -225,10 +235,10 @@ export async function POST(req: NextRequest) {
       )
     }
     sources = [a, b]
-    systemPrompt = DEEPER_COMPARE_PROMPT
+    systemPrompt = NOTICE_COMPARE_PROMPT
     userMessage = `PASSAGE A:\n${a}\n\n---\n\nPASSAGE B:\n${b}\n\n---\n\nSIGNALS ALREADY SHOWN:\n${signalsToContext(signals)}`
   } else {
-    const sb = body as Partial<DeeperRequestSingle>
+    const sb = body as Partial<NoticeRequestSingle>
     const text = typeof sb.text === "string" ? sb.text.trim() : ""
     if (text.length < MIN_CHARS || text.length > MAX_CHARS) {
       return NextResponse.json(
@@ -237,7 +247,7 @@ export async function POST(req: NextRequest) {
       )
     }
     sources = [text]
-    systemPrompt = mode === "yours" ? DEEPER_SELF_PROMPT : DEEPER_READ_PROMPT
+    systemPrompt = mode === "yours" ? NOTICE_SELF_PROMPT : NOTICE_READ_PROMPT
     if (mode === "yours") modelOverride = OPENROUTER_SELF_MODEL
     userMessage = `PASSAGE:\n${text}\n\n---\n\nSIGNALS ALREADY SHOWN:\n${signalsToContext(signals)}`
   }
@@ -251,7 +261,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const raw = await callModel(systemPrompt, userMessage, modelOverride)
-    const parsed = extractJson<DeeperResponse>(raw)
+    const parsed = extractJson<NoticeResponse>(raw)
 
     if (parsed && "declined" in parsed && parsed.declined) {
       return NextResponse.json(parsed, { status: 200 })
@@ -259,11 +269,11 @@ export async function POST(req: NextRequest) {
 
     if (
       parsed &&
-      "deeper" in parsed &&
-      typeof parsed.deeper === "string" &&
-      parsed.deeper.trim().length > 0
+      "notice" in parsed &&
+      typeof parsed.notice === "string" &&
+      parsed.notice.trim().length > 0
     ) {
-      const line = parsed.deeper.trim()
+      const line = parsed.notice.trim()
       const anchored = sources.some((s) => containsAnchorFromSource(line, s))
       if (!anchored || hasBannedPhrase(line)) {
         return NextResponse.json(
@@ -274,7 +284,7 @@ export async function POST(req: NextRequest) {
           { status: 200 }
         )
       }
-      return NextResponse.json({ deeper: line }, { status: 200 })
+      return NextResponse.json({ notice: line }, { status: 200 })
     }
 
     return NextResponse.json(
@@ -285,7 +295,7 @@ export async function POST(req: NextRequest) {
       { status: 200 }
     )
   } catch (err) {
-    console.error("[deeper] error:", err)
+    console.error("[notice] error:", err)
     return NextResponse.json(
       { error: "Something went quiet on our side. Try again in a moment." },
       { status: 500 }

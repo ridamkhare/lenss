@@ -1,44 +1,37 @@
 "use client"
 
 import { useState } from "react"
-import { requestDeeper, type DeeperRequestBody } from "@/lib/deeperClient"
+import { requestNotice, type NoticeRequestBody } from "@/lib/noticeClient"
 import type { Signal } from "@/lib/types"
 
 /**
- * V2 — ONE optional deeper interaction layer surfaced after the existing
- * response has finished rendering. Strictly additive:
+ * V2 — Lenss noticed one more thing.
+ *
+ * A single optional affordance surfaced after the main response has
+ * finished rendering. Strictly additive:
  *
  *   - Renders only when the main response is "shown" (caller decides).
- *   - Disabled when NEXT_PUBLIC_LENS_DEEPER === "false" (compile-time
- *     client kill). Server-side kill is LENS_DISABLE_DEEPER on the API.
- *   - One subtle affordance, one fade-in reveal, no loaders, no labels.
+ *   - Disabled when NEXT_PUBLIC_LENS_NOTICE === "false" (compile-time
+ *     client kill). Server-side kill is LENS_DISABLE_NOTICE on the API.
+ *   - One fixed affordance line, one fade-in reveal, no loaders.
  *
- * The affordance must visually recede. The deeper line, when revealed,
- * must inherit the same emotional tone as the main response.
+ * The affordance reads "Lenss noticed one more thing — show" and lives
+ * in the quiet space below the main response. On click, the V2 endpoint
+ * returns one grounded line — a single interaction dynamic the main
+ * response did not surface — or declines.
  */
-
-const AFFORDANCE_OPTIONS = [
-  "Another angle",
-  "Go deeper",
-  "Another reading",
-  "Different trajectory",
-] as const
-
-type AffordanceLabel = (typeof AFFORDANCE_OPTIONS)[number]
 
 type Props =
   | {
       mode: "read" | "yours"
       source: string
       signals: Signal[]
-      affordance?: AffordanceLabel
     }
   | {
       mode: "compare"
       sourceA: string
       sourceB: string
       signals: Signal[]
-      affordance?: AffordanceLabel
     }
 
 type State =
@@ -47,8 +40,8 @@ type State =
   | { kind: "revealed"; body: string }
   | { kind: "quiet"; reason: string }
 
-export function DeeperLayer(props: Props) {
-  const enabled = process.env.NEXT_PUBLIC_LENS_DEEPER !== "false"
+export function NoticedMore(props: Props) {
+  const enabled = process.env.NEXT_PUBLIC_LENS_NOTICE !== "false"
   const [state, setState] = useState<State>({ kind: "idle" })
 
   if (!enabled) return null
@@ -57,7 +50,7 @@ export function DeeperLayer(props: Props) {
     if (state.kind === "asking" || state.kind === "revealed") return
     setState({ kind: "asking" })
 
-    const body: DeeperRequestBody =
+    const body: NoticeRequestBody =
       props.mode === "compare"
         ? {
             mode: "compare",
@@ -71,8 +64,8 @@ export function DeeperLayer(props: Props) {
             signals: props.signals,
           }
 
-    const r = await requestDeeper(body)
-    if (r.kind === "deeper") {
+    const r = await requestNotice(body)
+    if (r.kind === "notice") {
       setState({ kind: "revealed", body: r.body })
     } else if (r.kind === "declined") {
       setState({ kind: "quiet", reason: r.reason })
@@ -82,16 +75,26 @@ export function DeeperLayer(props: Props) {
     }
   }
 
-  const label = props.affordance || "Another angle"
-
   if (state.kind === "revealed") {
     return (
       <div
-        className="mt-12 animate-reveal"
-        style={{ animationDuration: "700ms" }}
+        className="mt-12 animate-reveal text-center mx-auto"
+        style={{
+          maxWidth: "34rem",
+          animationDuration: "700ms",
+        }}
         data-clarity-mask="True"
       >
-        <p className="font-serif text-[15px] leading-[1.65] text-ink-dimmed">
+        <p
+          className="font-sans text-[10px] font-medium uppercase tracking-label text-ink-dimmed"
+          style={{ marginBottom: "1rem", opacity: 0.6 }}
+        >
+          One more thing
+        </p>
+        <p
+          className="font-serif italic text-ink-dimmed"
+          style={{ fontSize: "15px", lineHeight: "1.7" }}
+        >
           {state.body}
         </p>
       </div>
@@ -102,10 +105,13 @@ export function DeeperLayer(props: Props) {
     if (!state.reason) return null
     return (
       <div
-        className="mt-12 animate-reveal"
+        className="mt-12 animate-reveal text-center"
         style={{ animationDuration: "700ms" }}
       >
-        <p className="font-serif text-[14px] leading-[1.6] text-ink-dimmed/80">
+        <p
+          className="font-sans text-[12px] text-ink-dimmed mx-auto"
+          style={{ maxWidth: "34rem", opacity: 0.85 }}
+        >
           {state.reason}
         </p>
       </div>
@@ -115,19 +121,20 @@ export function DeeperLayer(props: Props) {
   const asking = state.kind === "asking"
 
   return (
-    <div className="mt-12">
+    <div className="mt-12 text-center">
       <button
         type="button"
         onClick={go}
         disabled={asking}
-        aria-label={label}
+        aria-label="Lenss noticed one more thing"
         className={
           asking
             ? "font-sans text-[12px] tracking-label text-ink-dimmed/70 animate-breathe cursor-default"
-            : "font-sans text-[12px] tracking-label text-ink-dimmed/70 hover:text-ink-dimmed transition-colors duration-200"
+            : "font-sans text-[12px] tracking-label text-ink-dimmed/70 hover:text-ink-dimmed transition-colors duration-300"
         }
+        style={{ opacity: 0.75 }}
       >
-        {label}
+        Lenss noticed one more thing — show
       </button>
     </div>
   )
