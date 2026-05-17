@@ -1,28 +1,26 @@
 import type { Signal } from "./types"
 
-export type DeeperRequestBody =
+export type NoticeRequestBody =
   | { mode: "read"; text: string; signals: Signal[] }
   | { mode: "yours"; text: string; signals: Signal[] }
   | { mode: "compare"; a: string; b: string; signals: Signal[] }
 
-export type DeeperResult =
-  | { kind: "deeper"; body: string }
+export type NoticeResult =
+  | { kind: "notice"; body: string }
   | { kind: "declined"; reason: string }
   | { kind: "error" }
 
-export async function requestDeeper(
-  body: DeeperRequestBody
-): Promise<DeeperResult> {
+export async function requestNotice(
+  body: NoticeRequestBody
+): Promise<NoticeResult> {
   try {
-    const res = await fetch("/api/deeper", {
+    const res = await fetch("/api/notice", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     })
 
     if (!res.ok && res.status !== 200) {
-      // The endpoint may also return non-200 with a JSON body (503, 400).
-      // Fall through to JSON parsing; if that fails, treat as error.
       try {
         const parsed = (await res.json()) as
           | { declined?: boolean; reason?: string }
@@ -37,11 +35,11 @@ export async function requestDeeper(
     }
 
     const parsed = (await res.json()) as
-      | { deeper?: string }
+      | { notice?: string }
       | { declined?: boolean; reason?: string }
 
-    if ("deeper" in parsed && typeof parsed.deeper === "string") {
-      return { kind: "deeper", body: parsed.deeper }
+    if ("notice" in parsed && typeof parsed.notice === "string") {
+      return { kind: "notice", body: parsed.notice }
     }
     if (
       "declined" in parsed &&
