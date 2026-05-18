@@ -225,15 +225,15 @@ export function NoticedMore(props: Props) {
           type="button"
           onClick={copyInsights}
           aria-label="Carry these insights back into the conversation"
-          className="block font-serif italic text-[13px] text-ink-dimmed hover:text-ink hover:underline hover:decoration-dotted hover:underline-offset-4 transition-colors duration-300 text-left"
-          style={{ opacity: 0.7, lineHeight: "1.6" }}
+          className="block font-serif italic text-[12px] text-ink-dimmed hover:opacity-80 transition-opacity duration-300 text-left"
+          style={{ opacity: 0.5, lineHeight: "1.55" }}
         >
           {copied ? COPIED_LABEL : CONTINUATION_CUE}
         </button>
       )}
 
       {(state.kind === "idle" || state.kind === "asking") && (
-        <div style={{ marginTop: "1rem" }}>
+        <div style={{ marginTop: "0.5rem" }}>
           <button
             type="button"
             onClick={go}
@@ -242,7 +242,7 @@ export function NoticedMore(props: Props) {
             className={
               asking
                 ? "font-serif italic text-[14px] text-ink-dimmed/70 animate-breathe cursor-default"
-                : "font-serif italic text-[14px] text-ink-dimmed/85 hover:text-ink hover:underline hover:decoration-dotted hover:underline-offset-4 transition-colors duration-300"
+                : "font-serif italic text-[14px] text-ink-dimmed hover:text-ink hover:underline hover:decoration-dotted hover:underline-offset-4 transition-colors duration-300"
             }
           >
             Lenss noticed one more thing — show
