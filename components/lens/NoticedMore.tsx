@@ -219,7 +219,7 @@ export function NoticedMore(props: Props) {
   const asking = state.kind === "asking"
 
   return (
-    <div className="mt-6 animate-reveal" style={{ animationDelay: "300ms" }}>
+    <div className="mt-4 animate-reveal" style={{ animationDelay: "300ms" }}>
       {showCue && (
         <button
           type="button"
