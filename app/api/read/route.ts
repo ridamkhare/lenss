@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server"
 import { analyzeSelfStream, type StreamEvent } from "@/lib/analyze"
 import { detectInjection, detectShape } from "@/lib/heuristics"
 import { checkSecurity } from "@/lib/security"
+import { logInteraction } from "@/lib/eventLog"
+import type { Signal } from "@/lib/types"
 
 export const runtime = "nodejs"
 
@@ -21,6 +23,12 @@ export async function POST(req: NextRequest) {
   const text = typeof body?.text === "string" ? body.text.trim() : ""
 
   const encoder = new TextEncoder()
+  const startedAt = Date.now()
+  const collectedSignals: Signal[] = []
+  let outcome: "signals" | "declined" | "input_rejected" | "error" =
+    "input_rejected"
+  let declineReason: string | undefined
+
   const stream = new ReadableStream({
     async start(controller) {
       const emit = (event: StreamEvent) =>
@@ -30,55 +38,70 @@ export async function POST(req: NextRequest) {
 
       try {
         if (text.length === 0) {
-          emit({ type: "declined", reason: "No passage was provided." })
+          declineReason = "No passage was provided."
+          emit({ type: "declined", reason: declineReason })
           return
         }
         if (text.length < MIN_CHARS) {
-          emit({
-            type: "declined",
-            reason: "This passage is too short to read.",
-          })
+          declineReason = "This passage is too short to read."
+          emit({ type: "declined", reason: declineReason })
           return
         }
         if (text.length > MAX_CHARS) {
-          emit({
-            type: "declined",
-            reason:
-              "This is longer than the instrument was built for. Try a tighter excerpt.",
-          })
+          declineReason =
+            "This is longer than the instrument was built for. Try a tighter excerpt."
+          emit({ type: "declined", reason: declineReason })
           return
         }
 
         const injection = detectInjection(text)
         if (injection) {
-          emit({ type: "declined", reason: injection.reason })
+          declineReason = injection.reason
+          emit({ type: "declined", reason: declineReason })
           return
         }
 
         const shape = detectShape(text)
         if (shape) {
-          emit({ type: "declined", reason: shape.reason })
+          declineReason = shape.reason
+          emit({ type: "declined", reason: declineReason })
           return
         }
 
         for await (const event of analyzeSelfStream(text)) {
           emit(event)
-          if (
-            event.type === "done" ||
-            event.type === "declined" ||
-            event.type === "error"
-          ) {
+          if (event.type === "signal") collectedSignals.push(event.signal)
+          if (event.type === "done") {
+            outcome = "signals"
+            break
+          }
+          if (event.type === "declined") {
+            outcome = "declined"
+            declineReason = event.reason
+            break
+          }
+          if (event.type === "error") {
+            outcome = "error"
+            declineReason = event.reason
             break
           }
         }
       } catch (err) {
         console.error("[read] error:", err)
-        emit({
-          type: "error",
-          reason: "Something went quiet on our side. Try again in a moment.",
-        })
+        outcome = "error"
+        declineReason = "Something went quiet on our side. Try again in a moment."
+        emit({ type: "error", reason: declineReason })
       } finally {
         controller.close()
+        await logInteraction(req, {
+          route: "read",
+          mode: "yours",
+          outcome,
+          duration_ms: Date.now() - startedAt,
+          input: text,
+          signals: outcome === "signals" ? collectedSignals : undefined,
+          decline_reason: declineReason,
+        })
       }
     },
   })
