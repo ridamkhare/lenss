@@ -201,7 +201,7 @@ function passesSignalQuality(
   source: string
 ): boolean {
   if (!Array.isArray(signals)) return false
-  if (signals.length < 1 || signals.length > 4) return false
+  if (signals.length < 1) return false
   for (const s of signals) {
     if (!s || !s.observation || !s.consequence || !s.steering) return false
     if (!containsAnchorFromSource(s.observation, source)) return false
@@ -229,7 +229,7 @@ function passesCompareSignalQuality(
   b: string
 ): boolean {
   if (!Array.isArray(signals)) return false
-  if (signals.length < 1 || signals.length > 4) return false
+  if (signals.length < 1) return false
   for (const s of signals) {
     if (!s || !s.observation || !s.consequence || !s.steering) return false
     const anchoredEither =
@@ -254,12 +254,14 @@ function passesCompareSignalQuality(
 }
 
 /**
- * Hard cap: never let more than 4 signals reach the UI. Materiality
- * is enforced by the prompt; this is just a safety ceiling. Also
- * enforces the depth-field cap of 2 per signal.
+ * No numerical cap on signal count — materiality is the only gate.
+ * Still enforces the depth-field cap of 2 per signal so each signal's
+ * UI shape stays consistent. If we ever need a defensive ceiling (cost,
+ * latency, payload size), add it here, but the MATERIALITY_RULE in the
+ * prompt is the intended limiter.
  */
 function clampSignals(signals: Signal[]): Signal[] {
-  return signals.slice(0, 4).map(clampDepth)
+  return signals.map(clampDepth)
 }
 
 function clampDepth(s: Signal): Signal {

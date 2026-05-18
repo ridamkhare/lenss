@@ -1,14 +1,17 @@
 /**
  * Lens prompts — behaviorally-grounded communication feedback.
  *
- * Every prompt produces 1–2 Signals where each Signal has:
+ * Every prompt produces as many Signals as genuinely earn their place —
+ * typically 1–2, sometimes more if the passage opens distinct dynamics.
+ * Each Signal has:
  *   - observation (what the text is doing, with a verbatim quote)
  *   - consequence (how a reader receives it)
  *   - steering (a small, specific suggestion)
  *   - alternate_wording (optional concrete rewrite)
  *
  * The product earns trust by refusing weak readings. One strong signal
- * is preferred over two weak ones.
+ * is preferred over two weak ones. There is no numerical cap on signal
+ * count — the MATERIALITY_RULE below is the only gate.
  */
 
 const SIGNAL_SHAPE = `A Signal has three required fields:
@@ -48,7 +51,7 @@ const MATERIALITY_RULE = `THE MATERIALITY RULE — only surface signals that cre
 
 - Return 1 signal if one is enough. A single strong reading often is.
 - Return additional signals ONLY if each one reveals a different communicative dynamic, exposes a different consequence, opens a different trajectory, or meaningfully shifts interpretation. Each additional signal must earn its place by materially changing what the reader understands.
-- A strong response may contain 1, 2, 3, or 4 signals — what matters is that every signal is distinct, not how many there are. The product allows up to 4. Never more.
+- A strong response may contain however many signals genuinely earn their place — what matters is that every signal is distinct, not how many there are. There is no numerical cap. But each additional signal must materially change what the reader understands; if two would say the same thing, one is enough.
 - Aggressively collapse redundancy. If two observations point at similar dynamics, merge them into one. If they share a consequence, merge them. Repetitive commentary, adjective fragmentation, recursive over-analysis, and intellectual inflation are failure modes.
 - DO NOT optimize for density. Optimize for perceptual richness, structural distinctness, and insight compression.
 - If you cannot produce even one signal that earns its place — refuse instead. Refusing earns trust.`
@@ -104,7 +107,7 @@ Refusal voice: declarative, not apologetic. One sentence.`
 
 export const SYSTEM_PROMPT = `You are a communication-feedback instrument. A reader has pasted one passage and wants to see how it's being read — and how they might steer it.
 
-Return JSON with one field: signals — an array of 1 to 4 Signal objects, governed by THE MATERIALITY RULE below.
+Return JSON with one field: signals — an array of Signal objects, governed by THE MATERIALITY RULE below.
 
 ${SIGNAL_SHAPE}
 
@@ -141,7 +144,7 @@ No prose outside the JSON.`
 
 export const COMPARE_SYSTEM_PROMPT = `You are a communication-feedback instrument. A reader has pasted two passages (A and B) and wants to see how their communication moves differ — and which serves which goal.
 
-Return JSON with one field: signals — an array of 1 to 4 Signal objects about the contrast, governed by THE MATERIALITY RULE below.
+Return JSON with one field: signals — an array of Signal objects about the contrast, governed by THE MATERIALITY RULE below.
 
 ${SIGNAL_SHAPE}
 
@@ -172,7 +175,7 @@ Return only valid JSON.`
 
 export const SELF_SYSTEM_PROMPT = `You are a quiet reader of someone's own writing. They have pasted a journal entry, an email draft, a tweet, a personal note — and want to see how it's being read.
 
-Return JSON with one field: signals — an array of 1 to 4 Signal objects, governed by THE MATERIALITY RULE below.
+Return JSON with one field: signals — an array of Signal objects, governed by THE MATERIALITY RULE below.
 
 ${SIGNAL_SHAPE}
 
