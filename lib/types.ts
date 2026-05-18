@@ -1,8 +1,9 @@
 /**
- * Signal is the unit of analysis. Every mode returns between 1 and 4
- * signals — but the count is governed by materiality, not a quota.
- * Surface a signal only when it adds a distinct perceptual or
- * strategic insight. Refuse rather than pad. Hard ceiling is 4.
+ * Signal is the unit of analysis. Every mode returns one or more
+ * signals — the count is governed by materiality, not a quota. Surface
+ * a signal only when it adds a distinct perceptual or strategic
+ * insight. Refuse rather than pad. No numerical cap — the prompt's
+ * MATERIALITY_RULE is the only gate.
  */
 export interface Signal {
   /** What's observable in the text. Anchored with a verbatim quote. */

@@ -306,7 +306,6 @@ export async function POST(req: NextRequest) {
 function signalsToContext(signals: Signal[]): string {
   if (signals.length === 0) return "(none)"
   return signals
-    .slice(0, 4)
     .map((s, i) => {
       const lines = [`(${i + 1})`]
       if (s.observation) lines.push(`  observation: ${s.observation}`)
