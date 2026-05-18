@@ -8,6 +8,7 @@ import {
   NOTICE_COMPARE_PROMPT,
 } from "@/lib/noticePrompt"
 import type { Signal } from "@/lib/types"
+import { logInteraction } from "@/lib/eventLog"
 
 export const runtime = "nodejs"
 
@@ -186,120 +187,163 @@ type NoticeResponse = NoticeResult | NoticeDeclined
 export async function POST(req: NextRequest) {
   const sec = checkSecurity(req)
   if (!sec.ok) {
+    // Hostile / unauthorized — don't log content.
     return NextResponse.json(
       { error: sec.reason || "forbidden" },
       { status: sec.status || 403 }
     )
   }
 
-  // Independent V2 kill switch — runtime, no rebuild required.
-  if (process.env.LENS_DISABLE_NOTICE === "true") {
-    return NextResponse.json(
-      { declined: true, reason: "Service temporarily paused." },
-      { status: 503 }
-    )
-  }
-
-  const body = (await req.json().catch(() => ({}))) as Partial<NoticeRequest>
-  const mode: Mode | undefined = body.mode
-
-  if (mode !== "read" && mode !== "yours" && mode !== "compare") {
-    return NextResponse.json(
-      { declined: true, reason: "Unknown mode." },
-      { status: 400 }
-    )
-  }
-
-  // Signals are optional context for the model — pass through any that arrived,
-  // but never trust their shape for validation.
-  const signals = Array.isArray(body.signals) ? body.signals : []
-
-  let userMessage = ""
-  let sources: string[] = []
-  let systemPrompt = ""
-  let modelOverride: string | undefined
-
-  if (mode === "compare") {
-    const cb = body as Partial<NoticeRequestCompare>
-    const a = typeof cb.a === "string" ? cb.a.trim() : ""
-    const b = typeof cb.b === "string" ? cb.b.trim() : ""
-    if (
-      a.length < MIN_CHARS ||
-      b.length < MIN_CHARS ||
-      a.length > MAX_CHARS ||
-      b.length > MAX_CHARS
-    ) {
-      return NextResponse.json(
-        { declined: true, reason: "Passages out of range." },
-        { status: 400 }
-      )
-    }
-    sources = [a, b]
-    systemPrompt = NOTICE_COMPARE_PROMPT
-    userMessage = `PASSAGE A:\n${a}\n\n---\n\nPASSAGE B:\n${b}\n\n---\n\nSIGNALS ALREADY SHOWN:\n${signalsToContext(signals)}`
-  } else {
-    const sb = body as Partial<NoticeRequestSingle>
-    const text = typeof sb.text === "string" ? sb.text.trim() : ""
-    if (text.length < MIN_CHARS || text.length > MAX_CHARS) {
-      return NextResponse.json(
-        { declined: true, reason: "Passage out of range." },
-        { status: 400 }
-      )
-    }
-    sources = [text]
-    systemPrompt = mode === "yours" ? NOTICE_SELF_PROMPT : NOTICE_READ_PROMPT
-    if (mode === "yours") modelOverride = OPENROUTER_SELF_MODEL
-    userMessage = `PASSAGE:\n${text}\n\n---\n\nSIGNALS ALREADY SHOWN:\n${signalsToContext(signals)}`
-  }
-
-  if (!hasModelAccess()) {
-    return NextResponse.json(
-      { declined: true, reason: "Nothing more to point at right now." },
-      { status: 200 }
-    )
-  }
+  const startedAt = Date.now()
+  let loggedMode: "read" | "yours" | "compare" = "read"
+  let loggedInput = ""
+  let loggedInputB: string | undefined
+  let loggedOutcome:
+    | "notice"
+    | "declined"
+    | "input_rejected"
+    | "error" = "input_rejected"
+  let loggedNotice: string | undefined
+  let loggedDecline: string | undefined
 
   try {
-    const raw = await callModel(systemPrompt, userMessage, modelOverride)
-    const parsed = extractJson<NoticeResponse>(raw)
-
-    if (parsed && "declined" in parsed && parsed.declined) {
-      return NextResponse.json(parsed, { status: 200 })
+    // Independent V2 kill switch — runtime, no rebuild required.
+    if (process.env.LENS_DISABLE_NOTICE === "true") {
+      loggedOutcome = "declined"
+      loggedDecline = "Service temporarily paused."
+      return NextResponse.json(
+        { declined: true, reason: loggedDecline },
+        { status: 503 }
+      )
     }
 
-    if (
-      parsed &&
-      "notice" in parsed &&
-      typeof parsed.notice === "string" &&
-      parsed.notice.trim().length > 0
-    ) {
-      const line = parsed.notice.trim()
-      const anchored = sources.some((s) => containsAnchorFromSource(line, s))
-      if (!anchored || hasBannedPhrase(line)) {
+    const body = (await req.json().catch(() => ({}))) as Partial<NoticeRequest>
+    const mode: Mode | undefined = body.mode
+
+    if (mode !== "read" && mode !== "yours" && mode !== "compare") {
+      loggedDecline = "Unknown mode."
+      return NextResponse.json(
+        { declined: true, reason: loggedDecline },
+        { status: 400 }
+      )
+    }
+    loggedMode = mode
+
+    // Signals are optional context for the model — pass through any that arrived,
+    // but never trust their shape for validation.
+    const signals = Array.isArray(body.signals) ? body.signals : []
+
+    let userMessage = ""
+    let sources: string[] = []
+    let systemPrompt = ""
+    let modelOverride: string | undefined
+
+    if (mode === "compare") {
+      const cb = body as Partial<NoticeRequestCompare>
+      const a = typeof cb.a === "string" ? cb.a.trim() : ""
+      const b = typeof cb.b === "string" ? cb.b.trim() : ""
+      loggedInput = a
+      loggedInputB = b
+      if (
+        a.length < MIN_CHARS ||
+        b.length < MIN_CHARS ||
+        a.length > MAX_CHARS ||
+        b.length > MAX_CHARS
+      ) {
+        loggedDecline = "Passages out of range."
         return NextResponse.json(
-          {
-            declined: true,
-            reason: "Nothing specific enough to point at past what's already there.",
-          },
-          { status: 200 }
+          { declined: true, reason: loggedDecline },
+          { status: 400 }
         )
       }
-      return NextResponse.json({ notice: line }, { status: 200 })
+      sources = [a, b]
+      systemPrompt = NOTICE_COMPARE_PROMPT
+      userMessage = `PASSAGE A:\n${a}\n\n---\n\nPASSAGE B:\n${b}\n\n---\n\nSIGNALS ALREADY SHOWN:\n${signalsToContext(signals)}`
+    } else {
+      const sb = body as Partial<NoticeRequestSingle>
+      const text = typeof sb.text === "string" ? sb.text.trim() : ""
+      loggedInput = text
+      if (text.length < MIN_CHARS || text.length > MAX_CHARS) {
+        loggedDecline = "Passage out of range."
+        return NextResponse.json(
+          { declined: true, reason: loggedDecline },
+          { status: 400 }
+        )
+      }
+      sources = [text]
+      systemPrompt = mode === "yours" ? NOTICE_SELF_PROMPT : NOTICE_READ_PROMPT
+      if (mode === "yours") modelOverride = OPENROUTER_SELF_MODEL
+      userMessage = `PASSAGE:\n${text}\n\n---\n\nSIGNALS ALREADY SHOWN:\n${signalsToContext(signals)}`
     }
 
-    return NextResponse.json(
-      {
-        declined: true,
-        reason: "Nothing specific enough to point at past what's already there.",
-      },
-      { status: 200 }
-    )
-  } catch (err) {
-    console.error("[notice] error:", err)
-    return NextResponse.json(
-      { error: "Something went quiet on our side. Try again in a moment." },
-      { status: 500 }
-    )
+    if (!hasModelAccess()) {
+      loggedOutcome = "declined"
+      loggedDecline = "Nothing more to point at right now."
+      return NextResponse.json(
+        { declined: true, reason: loggedDecline },
+        { status: 200 }
+      )
+    }
+
+    try {
+      const raw = await callModel(systemPrompt, userMessage, modelOverride)
+      const parsed = extractJson<NoticeResponse>(raw)
+
+      if (parsed && "declined" in parsed && parsed.declined) {
+        loggedOutcome = "declined"
+        loggedDecline = parsed.reason
+        return NextResponse.json(parsed, { status: 200 })
+      }
+
+      if (
+        parsed &&
+        "notice" in parsed &&
+        typeof parsed.notice === "string" &&
+        parsed.notice.trim().length > 0
+      ) {
+        const line = parsed.notice.trim()
+        const anchored = sources.some((s) => containsAnchorFromSource(line, s))
+        if (!anchored || hasBannedPhrase(line)) {
+          loggedOutcome = "declined"
+          loggedDecline =
+            "Nothing specific enough to point at past what's already there."
+          return NextResponse.json(
+            { declined: true, reason: loggedDecline },
+            { status: 200 }
+          )
+        }
+        loggedOutcome = "notice"
+        loggedNotice = line
+        return NextResponse.json({ notice: line }, { status: 200 })
+      }
+
+      loggedOutcome = "declined"
+      loggedDecline =
+        "Nothing specific enough to point at past what's already there."
+      return NextResponse.json(
+        { declined: true, reason: loggedDecline },
+        { status: 200 }
+      )
+    } catch (err) {
+      console.error("[notice] error:", err)
+      loggedOutcome = "error"
+      loggedDecline = "Something went quiet on our side. Try again in a moment."
+      return NextResponse.json(
+        { error: loggedDecline },
+        { status: 500 }
+      )
+    }
+  } finally {
+    await logInteraction(req, {
+      route: "notice",
+      mode: loggedMode,
+      outcome: loggedOutcome,
+      duration_ms: Date.now() - startedAt,
+      input: loggedInput,
+      input_b: loggedInputB,
+      notice: loggedNotice,
+      decline_reason: loggedDecline,
+    })
   }
 }
 
