@@ -9,6 +9,7 @@ import { Footer } from "@/components/lens/Footer"
 import { NoticedMore } from "@/components/lens/NoticedMore"
 import { streamRequest } from "@/lib/streamClient"
 import type { RevealResult } from "@/lib/types"
+import { useDepthSelection } from "@/lib/useDepthSelection"
 
 type Status =
   | "empty"
@@ -23,6 +24,7 @@ export default function Page() {
   const [text, setText] = useState("")
   const [result, setResult] = useState<RevealResult | null>(null)
   const [message, setMessage] = useState<string>("")
+  const depth = useDepthSelection()
 
   async function handleReveal(input: string) {
     const trimmed = input.trim()
@@ -67,6 +69,7 @@ export default function Page() {
     setText("")
     setResult(null)
     setMessage("")
+    depth.reset()
   }
 
   const isEmpty = status === "empty" || status === "revealing"
@@ -106,11 +109,18 @@ export default function Page() {
           result={result}
           onReset={handleReset}
           streaming={streaming}
+          revealedBySignal={depth.revealedBySignal}
+          onDepthToggle={depth.toggle}
         />
       )}
 
       {status === "shown" && result && result.signals.length > 0 && (
-        <NoticedMore mode="read" source={text} signals={result.signals} />
+        <NoticedMore
+          mode="read"
+          source={text}
+          signals={result.signals}
+          revealedBySignal={depth.revealedBySignal}
+        />
       )}
 
       {status === "declined" && (

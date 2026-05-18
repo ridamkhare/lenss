@@ -9,6 +9,7 @@ import { Footer } from "@/components/lens/Footer"
 import { NoticedMore } from "@/components/lens/NoticedMore"
 import { streamRequest } from "@/lib/streamClient"
 import type { SelfReadingResult } from "@/lib/types"
+import { useDepthSelection } from "@/lib/useDepthSelection"
 
 type Status =
   | "empty"
@@ -23,6 +24,7 @@ export default function YoursPage() {
   const [text, setText] = useState("")
   const [result, setResult] = useState<SelfReadingResult | null>(null)
   const [message, setMessage] = useState<string>("")
+  const depth = useDepthSelection()
 
   async function handleRead(input: string) {
     const trimmed = input.trim()
@@ -68,6 +70,7 @@ export default function YoursPage() {
     setText("")
     setResult(null)
     setMessage("")
+    depth.reset()
   }
 
   const isEmpty = status === "empty" || status === "reading"
@@ -107,11 +110,18 @@ export default function YoursPage() {
           result={result}
           onReset={handleReset}
           streaming={streaming}
+          revealedBySignal={depth.revealedBySignal}
+          onDepthToggle={depth.toggle}
         />
       )}
 
       {status === "shown" && result && result.signals.length > 0 && (
-        <NoticedMore mode="yours" source={text} signals={result.signals} />
+        <NoticedMore
+          mode="yours"
+          source={text}
+          signals={result.signals}
+          revealedBySignal={depth.revealedBySignal}
+        />
       )}
 
       {status === "declined" && (
