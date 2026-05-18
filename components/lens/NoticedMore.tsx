@@ -59,6 +59,62 @@ const CONTINUATION_CUE =
 const COPIED_LABEL = "Copied."
 const COPIED_FEEDBACK_MS = 1800
 
+/**
+ * Reframe third-person "the reader" references in the copied insights
+ * to first-person ("I", "me", "my") for read and compare modes only.
+ *
+ * Why mode-gated: in Yours mode the "reader" is someone reading the
+ * user's own writing — a third party, not the user. Rewriting there
+ * would invert meaning.
+ *
+ * Why conservative: pure regex can't safely conjugate arbitrary verbs.
+ * The patterns below cover the high-confidence cases (possessive,
+ * auxiliary verbs in subject position, prepositional object) and
+ * leave everything else untouched rather than risk ungrammatical
+ * output. Signals that don't match still read naturally — "the
+ * reader" is just slightly more distant than "I".
+ */
+function reframeForFirstPerson(
+  text: string,
+  mode: "read" | "yours" | "compare"
+): string {
+  if (mode === "yours") return text
+
+  let result = text
+
+  // Possessive: "the reader's X" → "my X"
+  result = result.replace(/\bthe reader's\b/g, "my")
+  result = result.replace(/\bThe reader's\b/g, "My")
+
+  // Auxiliary / modal verb in subject position
+  const auxMap: Record<string, string> = {
+    is: "am",
+    was: "was",
+    has: "have",
+    had: "had",
+    can: "can",
+    may: "may",
+    might: "might",
+    will: "will",
+    would: "would",
+    should: "should",
+    does: "do",
+    did: "did",
+  }
+  result = result.replace(
+    /\b[tT]he reader (is|was|has|had|can|may|might|will|would|should|does|did)\b/g,
+    (_, aux: string) => `I ${auxMap[aux]}`
+  )
+
+  // Prepositional object: "[prep] the reader" → "[prep] me"
+  result = result.replace(
+    /\b(to|for|of|by|on|in|with|at|from|against|toward|towards|over|about|around|behind|beyond|under|underneath|alongside|beside) the reader\b/gi,
+    (_, prep: string) => `${prep} me`
+  )
+
+  return result
+}
+
 const DEPTH_KEYS: DepthKey[] = [
   "why_it_matters",
   "audience_effect",
@@ -138,7 +194,7 @@ export function NoticedMore(props: Props) {
       parts.push(liveState.body.trim())
     }
 
-    return parts.join("\n\n")
+    return reframeForFirstPerson(parts.join("\n\n"), liveProps.mode)
   }
 
   async function writeToClipboard(): Promise<boolean> {
