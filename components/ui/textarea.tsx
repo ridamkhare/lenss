@@ -8,6 +8,7 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
     <textarea
       ref={ref}
       suppressHydrationWarning
+      data-clarity-mask="True"
       className={cn(
         "w-full resize-none rounded-md border border-divider bg-paper px-6 py-5",
         "font-serif text-[17px] leading-[1.65] text-ink",

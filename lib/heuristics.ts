@@ -14,6 +14,36 @@ export interface HeuristicRefusal {
   reason: string
 }
 
+/**
+ * Adversarial-input detection. Refuses pastes that are obvious prompt
+ * injection or prompt-extraction attempts, before they reach the model.
+ * Patterns are intentionally narrow — designed to catch lazy attacks
+ * (which are the vast majority of probing traffic) without false-positive
+ * refusals on legitimate AI-answer pastes that might discuss prompts as
+ * a topic.
+ */
+export function detectInjection(text: string): HeuristicRefusal | null {
+  if (/<\|im_start\|>|<\|im_end\|>|\[INST\]|\[\/INST\]|<<SYS>>|<\/?SYS>/i.test(text)) {
+    return {
+      reason: "This contains model control tokens. Paste an AI answer in plain text.",
+    }
+  }
+  if (text.length < 300) {
+    if (
+      /\b(tell|show|print|reveal|repeat|recite) me (your|the) (system )?(prompt|instructions)\b/i.test(text) ||
+      /\bwhat (is|are) your (system )?(prompt|instructions)\b/i.test(text) ||
+      /\bignore (all )?(previous |prior )?instructions\b/i.test(text) ||
+      /\bdisregard (all )?(previous |prior )?(instructions|context)\b/i.test(text) ||
+      /\byou are now (a |an )/i.test(text) && text.length < 150
+    ) {
+      return {
+        reason: "This reads as an instruction to the instrument, not a passage to read.",
+      }
+    }
+  }
+  return null
+}
+
 export function detectShape(text: string): HeuristicRefusal | null {
   if (looksLikeCode(text)) {
     return { reason: "This reads as code. The instrument is built for prose." }

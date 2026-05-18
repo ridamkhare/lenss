@@ -108,13 +108,19 @@ export function ArchiveList() {
                   {relativeDate(item.createdAt)}
                 </span>
               </div>
-              <p className="font-serif text-[16px] leading-[1.5] text-ink">
+              <p
+                className="font-serif text-[16px] leading-[1.5] text-ink"
+                data-clarity-mask="True"
+              >
                 {sourceSnippet(item)}
               </p>
             </button>
 
             {isOpen && (
-              <div className="mt-8 pl-5 border-l border-divider animate-reveal">
+              <div
+                className="mt-8 pl-5 border-l border-divider animate-reveal"
+                data-clarity-mask="True"
+              >
                 <ItemBody item={item} />
 
                 <div className="mt-8 flex items-center gap-6">

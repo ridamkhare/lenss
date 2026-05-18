@@ -6,11 +6,19 @@ import { CompareResultView } from "@/components/lens/CompareResultView"
 import { MessageView } from "@/components/lens/MessageView"
 import { ModeNav } from "@/components/lens/ModeNav"
 import { Footer } from "@/components/lens/Footer"
+import { NoticedMore } from "@/components/lens/NoticedMore"
 import { takeComparePrefill } from "@/lib/storage"
-import type { CompareResult, CompareResponse } from "@/lib/types"
-import { isDeclined } from "@/lib/types"
+import { streamRequest } from "@/lib/streamClient"
+import type { CompareResult } from "@/lib/types"
+import { useDepthSelection } from "@/lib/useDepthSelection"
 
-type Status = "empty" | "comparing" | "shown" | "declined" | "error"
+type Status =
+  | "empty"
+  | "comparing"
+  | "streaming"
+  | "shown"
+  | "declined"
+  | "error"
 
 export default function ComparePage() {
   const [status, setStatus] = useState<Status>("empty")
@@ -18,6 +26,7 @@ export default function ComparePage() {
   const [b, setB] = useState("")
   const [result, setResult] = useState<CompareResult | null>(null)
   const [message, setMessage] = useState<string>("")
+  const depth = useDepthSelection()
 
   useEffect(() => {
     const prefill = takeComparePrefill()
@@ -28,30 +37,34 @@ export default function ComparePage() {
     if (textA.trim().length === 0 || textB.trim().length === 0) return
 
     setStatus("comparing")
+    setResult({ signals: [] })
+    setMessage("")
 
     try {
-      const res = await fetch("/api/compare", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ a: textA.trim(), b: textB.trim() }),
-      })
-
-      if (!res.ok && res.status !== 400) {
-        setMessage("That didn't come through. Try again in a moment.")
-        setStatus("error")
-        return
+      for await (const event of streamRequest("/api/compare", {
+        a: textA.trim(),
+        b: textB.trim(),
+      })) {
+        if (event.type === "signal") {
+          setResult((prev) => ({
+            signals: [...(prev?.signals || []), event.signal],
+          }))
+          setStatus((prev) => (prev === "comparing" ? "streaming" : prev))
+        } else if (event.type === "declined") {
+          setMessage(event.reason)
+          setStatus("declined")
+          return
+        } else if (event.type === "error") {
+          setMessage(event.reason)
+          setStatus((prev) =>
+            prev === "streaming" || prev === "shown" ? "shown" : "error"
+          )
+          return
+        } else if (event.type === "done") {
+          setStatus("shown")
+          return
+        }
       }
-
-      const data: CompareResponse = await res.json()
-
-      if (isDeclined(data)) {
-        setMessage(data.reason)
-        setStatus("declined")
-        return
-      }
-
-      setResult(data)
-      setStatus("shown")
     } catch {
       setMessage("That didn't come through. Try again in a moment.")
       setStatus("error")
@@ -64,7 +77,15 @@ export default function ComparePage() {
     setB("")
     setResult(null)
     setMessage("")
+    depth.reset()
   }
+
+  const isEmpty = status === "empty" || status === "comparing"
+  const isResult =
+    (status === "streaming" || status === "shown") &&
+    result !== null &&
+    result.signals.length > 0
+  const streaming = status === "streaming"
 
   return (
     <main className="mx-auto w-full max-w-3xl px-6 sm:px-8 pt-20 sm:pt-28 pb-20">
@@ -73,18 +94,19 @@ export default function ComparePage() {
           href="/"
           className="font-sans text-[14px] font-medium tracking-wordmark text-ink lowercase hover:text-ink-dimmed transition-colors duration-200"
         >
-          lens
+          lenss
         </a>
         <ModeNav />
       </header>
 
-      {(status === "empty" || status === "comparing") && (
+      {isEmpty && (
         <p className="mb-12 sm:mb-14 font-serif text-[17px] leading-[1.55] text-ink-dimmed">
-          Paste two AI answers to the same question. See how each shapes the reader.
+          Paste two AI answers to the same question. See how each shapes the
+          reader.
         </p>
       )}
 
-      {(status === "empty" || status === "comparing") && (
+      {isEmpty && (
         <CompareInputView
           a={a}
           b={b}
@@ -95,12 +117,25 @@ export default function ComparePage() {
         />
       )}
 
-      {status === "shown" && result && (
+      {isResult && result && (
         <CompareResultView
           sourceA={a}
           sourceB={b}
           result={result}
           onReset={handleReset}
+          streaming={streaming}
+          revealedBySignal={depth.revealedBySignal}
+          onDepthToggle={depth.toggle}
+        />
+      )}
+
+      {status === "shown" && result && result.signals.length > 0 && (
+        <NoticedMore
+          mode="compare"
+          sourceA={a}
+          sourceB={b}
+          signals={result.signals}
+          revealedBySignal={depth.revealedBySignal}
         />
       )}
 

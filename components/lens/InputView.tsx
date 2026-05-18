@@ -3,6 +3,7 @@
 import { useRef } from "react"
 import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
+import { LoadingPhrase } from "./LoadingPhrase"
 
 export function InputView({
   value,
@@ -45,7 +46,7 @@ export function InputView({
       <div className="mt-8 flex items-center justify-between">
         <span className="font-sans text-[12px] text-ink-dimmed">
           {revealing ? (
-            <span className="animate-breathe">Reading</span>
+            <LoadingPhrase initial="Reading" />
           ) : (
             <>
               <kbd className="font-sans">⌘</kbd>

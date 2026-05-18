@@ -2,6 +2,7 @@
 
 import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
+import { LoadingPhrase } from "./LoadingPhrase"
 
 export function CompareInputView({
   a,
@@ -72,7 +73,7 @@ export function CompareInputView({
       <div className="mt-8 flex items-center justify-between">
         <span className="font-sans text-[12px] text-ink-dimmed">
           {comparing ? (
-            <span className="animate-breathe">Comparing</span>
+            <LoadingPhrase initial="Comparing" />
           ) : (
             <>
               <kbd className="font-sans">⌘</kbd>

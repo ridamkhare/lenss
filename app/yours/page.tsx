@@ -6,16 +6,25 @@ import { SelfResultView } from "@/components/lens/SelfResultView"
 import { MessageView } from "@/components/lens/MessageView"
 import { ModeNav } from "@/components/lens/ModeNav"
 import { Footer } from "@/components/lens/Footer"
-import type { SelfReadingResult, SelfResponse } from "@/lib/types"
-import { isDeclined } from "@/lib/types"
+import { NoticedMore } from "@/components/lens/NoticedMore"
+import { streamRequest } from "@/lib/streamClient"
+import type { SelfReadingResult } from "@/lib/types"
+import { useDepthSelection } from "@/lib/useDepthSelection"
 
-type Status = "empty" | "reading" | "shown" | "declined" | "error"
+type Status =
+  | "empty"
+  | "reading"
+  | "streaming"
+  | "shown"
+  | "declined"
+  | "error"
 
 export default function YoursPage() {
   const [status, setStatus] = useState<Status>("empty")
   const [text, setText] = useState("")
   const [result, setResult] = useState<SelfReadingResult | null>(null)
   const [message, setMessage] = useState<string>("")
+  const depth = useDepthSelection()
 
   async function handleRead(input: string) {
     const trimmed = input.trim()
@@ -23,30 +32,33 @@ export default function YoursPage() {
 
     setText(trimmed)
     setStatus("reading")
+    setResult({ signals: [] })
+    setMessage("")
 
     try {
-      const res = await fetch("/api/read", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: trimmed }),
-      })
-
-      if (!res.ok && res.status !== 400) {
-        setMessage("That didn't come through. Try again in a moment.")
-        setStatus("error")
-        return
+      for await (const event of streamRequest("/api/read", {
+        text: trimmed,
+      })) {
+        if (event.type === "signal") {
+          setResult((prev) => ({
+            signals: [...(prev?.signals || []), event.signal],
+          }))
+          setStatus((prev) => (prev === "reading" ? "streaming" : prev))
+        } else if (event.type === "declined") {
+          setMessage(event.reason)
+          setStatus("declined")
+          return
+        } else if (event.type === "error") {
+          setMessage(event.reason)
+          setStatus((prev) =>
+            prev === "streaming" || prev === "shown" ? "shown" : "error"
+          )
+          return
+        } else if (event.type === "done") {
+          setStatus("shown")
+          return
+        }
       }
-
-      const data: SelfResponse = await res.json()
-
-      if (isDeclined(data)) {
-        setMessage(data.reason)
-        setStatus("declined")
-        return
-      }
-
-      setResult(data)
-      setStatus("shown")
     } catch {
       setMessage("That didn't come through. Try again in a moment.")
       setStatus("error")
@@ -58,24 +70,32 @@ export default function YoursPage() {
     setText("")
     setResult(null)
     setMessage("")
+    depth.reset()
   }
+
+  const isEmpty = status === "empty" || status === "reading"
+  const isResult =
+    (status === "streaming" || status === "shown") &&
+    result !== null &&
+    result.signals.length > 0
+  const streaming = status === "streaming"
 
   return (
     <main className="mx-auto w-full max-w-reading px-6 sm:px-8 pt-20 sm:pt-28 pb-20">
       <header className="mb-12 sm:mb-14 flex items-center justify-between">
         <span className="font-sans text-[14px] font-medium tracking-wordmark text-ink lowercase">
-          lens
+          lenss
         </span>
         <ModeNav />
       </header>
 
-      {(status === "empty" || status === "reading") && (
+      {isEmpty && (
         <p className="mb-12 sm:mb-14 font-serif text-[17px] leading-[1.55] text-ink-dimmed">
           Paste something you wrote. See how it reads beyond what you meant.
         </p>
       )}
 
-      {(status === "empty" || status === "reading") && (
+      {isEmpty && (
         <SelfInputView
           value={text}
           onChange={setText}
@@ -84,8 +104,24 @@ export default function YoursPage() {
         />
       )}
 
-      {status === "shown" && result && (
-        <SelfResultView source={text} result={result} onReset={handleReset} />
+      {isResult && result && (
+        <SelfResultView
+          source={text}
+          result={result}
+          onReset={handleReset}
+          streaming={streaming}
+          revealedBySignal={depth.revealedBySignal}
+          onDepthToggle={depth.toggle}
+        />
+      )}
+
+      {status === "shown" && result && result.signals.length > 0 && (
+        <NoticedMore
+          mode="yours"
+          source={text}
+          signals={result.signals}
+          revealedBySignal={depth.revealedBySignal}
+        />
       )}
 
       {status === "declined" && (
