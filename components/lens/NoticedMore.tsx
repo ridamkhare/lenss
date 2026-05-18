@@ -45,7 +45,7 @@ type State =
   | { kind: "revealed"; body: string }
   | { kind: "quiet"; reason: string }
 
-const CONTINUATION_CUE = "You can carry this back to your assistant."
+const CONTINUATION_CUE = "Carry these insights back into the conversation and see what changes."
 
 export function NoticedMore(props: Props) {
   const enabled = process.env.NEXT_PUBLIC_LENS_NOTICE !== "false"
