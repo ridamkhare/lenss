@@ -13,12 +13,17 @@ import type { Signal } from "@/lib/types"
  *   - Renders only when the main response is "shown" (caller decides).
  *   - Disabled when NEXT_PUBLIC_LENS_NOTICE === "false" (compile-time
  *     client kill). Server-side kill is LENS_DISABLE_NOTICE on the API.
- *   - One fixed affordance line, one fade-in reveal, no loaders.
  *
- * The affordance reads "Lenss noticed one more thing — show" and lives
- * in the quiet space below the main response. On click, the V2 endpoint
- * returns one grounded line — a single interaction dynamic the main
- * response did not surface — or declines.
+ * Affordance ("idle"): a single italic-serif phrase placed close to the
+ * V1 signal column. Reads as a continuation of the reading, not as a
+ * separate UI region. Hover surfaces a dotted underline to confirm
+ * interactivity for users who explore the page.
+ *
+ * Reveal ("revealed"): a single grounded line — one interaction dynamic
+ * the main response did not surface — followed by a static continuation
+ * cue that hints the insight can be carried back into the user's
+ * conversation with their AI assistant. The cue is intentionally quiet
+ * and non-prescriptive.
  */
 
 type Props =
@@ -39,6 +44,8 @@ type State =
   | { kind: "asking" }
   | { kind: "revealed"; body: string }
   | { kind: "quiet"; reason: string }
+
+const CONTINUATION_CUE = "You can carry this back to your assistant."
 
 export function NoticedMore(props: Props) {
   const enabled = process.env.NEXT_PUBLIC_LENS_NOTICE !== "false"
@@ -97,6 +104,21 @@ export function NoticedMore(props: Props) {
         >
           {state.body}
         </p>
+        <div
+          className="animate-reveal"
+          style={{
+            marginTop: "1.75rem",
+            animationDuration: "700ms",
+            animationDelay: "1000ms",
+          }}
+        >
+          <p
+            className="font-serif italic text-ink-dimmed"
+            style={{ fontSize: "13px", lineHeight: "1.6", opacity: 0.55 }}
+          >
+            {CONTINUATION_CUE}
+          </p>
+        </div>
       </div>
     )
   }
@@ -121,7 +143,10 @@ export function NoticedMore(props: Props) {
   const asking = state.kind === "asking"
 
   return (
-    <div className="mt-12 text-center">
+    <div
+      className="mt-6 animate-reveal"
+      style={{ animationDelay: "300ms" }}
+    >
       <button
         type="button"
         onClick={go}
@@ -129,10 +154,9 @@ export function NoticedMore(props: Props) {
         aria-label="Lenss noticed one more thing"
         className={
           asking
-            ? "font-sans text-[12px] tracking-label text-ink-dimmed/70 animate-breathe cursor-default"
-            : "font-sans text-[12px] tracking-label text-ink-dimmed/70 hover:text-ink-dimmed transition-colors duration-300"
+            ? "font-serif italic text-[14px] text-ink-dimmed/70 animate-breathe cursor-default"
+            : "font-serif italic text-[14px] text-ink-dimmed/80 hover:text-ink hover:underline hover:decoration-dotted hover:underline-offset-4 transition-colors duration-300"
         }
-        style={{ opacity: 0.75 }}
       >
         Lenss noticed one more thing — show
       </button>
