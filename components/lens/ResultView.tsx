@@ -6,17 +6,22 @@ import { SignalBlock } from "./SignalBlock"
 import { LoadingPhrase } from "./LoadingPhrase"
 import { saveReveal } from "@/lib/storage"
 import type { RevealResult } from "@/lib/types"
+import type { DepthKey } from "@/lib/useDepthSelection"
 
 export function ResultView({
   source,
   result,
   onReset,
   streaming = false,
+  revealedBySignal,
+  onDepthToggle,
 }: {
   source: string
   result: RevealResult
   onReset: () => void
   streaming?: boolean
+  revealedBySignal?: Record<number, Set<DepthKey>>
+  onDepthToggle?: (signalIndex: number, key: DepthKey) => void
 }) {
   return (
     <div>
@@ -41,7 +46,14 @@ export function ResultView({
             {i > 0 && (
               <hr className="mb-12 border-0 border-t border-divider" />
             )}
-            <SignalBlock signal={s} delayMs={0} />
+            <SignalBlock
+              signal={s}
+              delayMs={0}
+              revealed={revealedBySignal?.[i]}
+              onToggle={
+                onDepthToggle ? (key) => onDepthToggle(i, key) : undefined
+              }
+            />
           </div>
         ))}
       </div>

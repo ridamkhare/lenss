@@ -2,17 +2,9 @@
 
 import { useState } from "react"
 import type { Signal } from "@/lib/types"
+import type { DepthKey } from "@/lib/useDepthSelection"
 
-type DepthKey =
-  | "why_it_matters"
-  | "audience_effect"
-  | "alternative_framing"
-  | "different_steering"
-  | "likely_next_concerns"
-  | "hidden_intent_branching"
-  | "framing_pull"
-  | "alternate_reader_realities"
-  | "conversational_trajectory"
+export type { DepthKey }
 
 const DEPTH_FIELDS: { key: DepthKey; trigger: string; label: string }[] = [
   { key: "why_it_matters", trigger: "why this matters", label: "Why this matters" },
@@ -43,16 +35,32 @@ const DEPTH_OFFSET_MS = 1500 // depth triggers appear last, quietly
 export function SignalBlock({
   signal,
   delayMs,
+  revealed: revealedProp,
+  onToggle,
 }: {
   signal: Signal
   delayMs: number
+  /**
+   * Optional controlled expansion state. When omitted, SignalBlock
+   * keeps its own internal state (legacy mode — still used by
+   * ArchiveList). When provided, the parent owns the state so other
+   * components (e.g. NoticedMore for clipboard copy) can read it.
+   */
+  revealed?: Set<DepthKey>
+  onToggle?: (key: DepthKey) => void
 }) {
-  const [revealed, setRevealed] = useState<Set<DepthKey>>(new Set())
+  const [localRevealed, setLocalRevealed] = useState<Set<DepthKey>>(new Set())
+  const isControlled = revealedProp !== undefined && onToggle !== undefined
+  const revealed = isControlled ? revealedProp : localRevealed
 
   const present = DEPTH_FIELDS.filter((f) => !!signal[f.key])
 
   function toggle(key: DepthKey) {
-    setRevealed((prev) => {
+    if (isControlled) {
+      onToggle!(key)
+      return
+    }
+    setLocalRevealed((prev) => {
       const next = new Set(prev)
       if (next.has(key)) next.delete(key)
       else next.add(key)

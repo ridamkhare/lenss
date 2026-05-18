@@ -10,6 +10,7 @@ import { NoticedMore } from "@/components/lens/NoticedMore"
 import { takeComparePrefill } from "@/lib/storage"
 import { streamRequest } from "@/lib/streamClient"
 import type { CompareResult } from "@/lib/types"
+import { useDepthSelection } from "@/lib/useDepthSelection"
 
 type Status =
   | "empty"
@@ -25,6 +26,7 @@ export default function ComparePage() {
   const [b, setB] = useState("")
   const [result, setResult] = useState<CompareResult | null>(null)
   const [message, setMessage] = useState<string>("")
+  const depth = useDepthSelection()
 
   useEffect(() => {
     const prefill = takeComparePrefill()
@@ -75,6 +77,7 @@ export default function ComparePage() {
     setB("")
     setResult(null)
     setMessage("")
+    depth.reset()
   }
 
   const isEmpty = status === "empty" || status === "comparing"
@@ -121,6 +124,8 @@ export default function ComparePage() {
           result={result}
           onReset={handleReset}
           streaming={streaming}
+          revealedBySignal={depth.revealedBySignal}
+          onDepthToggle={depth.toggle}
         />
       )}
 
@@ -130,6 +135,7 @@ export default function ComparePage() {
           sourceA={a}
           sourceB={b}
           signals={result.signals}
+          revealedBySignal={depth.revealedBySignal}
         />
       )}
 
