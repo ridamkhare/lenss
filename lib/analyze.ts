@@ -53,7 +53,7 @@ function hasModelAccess(): boolean {
  * and a smaller envelope for yours since self-mode readings stay
  * tighter by design.
  */
-const MAX_TOKENS_READ_COMPARE = 3000
+const MAX_TOKENS_READ_COMPARE = 10000
 const MAX_TOKENS_YOURS = 2000
 
 async function callModel(
