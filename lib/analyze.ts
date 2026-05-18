@@ -43,6 +43,19 @@ function hasModelAccess(): boolean {
   return !!(process.env.OPENROUTER_API_KEY || process.env.ANTHROPIC_API_KEY)
 }
 
+/**
+ * Output token budgets per mode. These are the de-facto soft ceilings
+ * on response size — the MATERIALITY_RULE in the prompt is the real
+ * gate, but if it produces many distinct signals each carrying depth
+ * fields, the JSON payload needs room to land cleanly without
+ * truncation. Sized to comfortably fit a long-but-defensible reading
+ * (~10 signals with up-to-two depth fields each) for read/compare,
+ * and a smaller envelope for yours since self-mode readings stay
+ * tighter by design.
+ */
+const MAX_TOKENS_READ_COMPARE = 3000
+const MAX_TOKENS_YOURS = 2000
+
 async function callModel(
   systemPrompt: string,
   userMessage: string,
@@ -291,7 +304,7 @@ export async function analyze(text: string): Promise<AnalyzeResponse> {
 
 async function analyzeWithClaude(text: string): Promise<AnalyzeResponse> {
   async function attempt(): Promise<AnalyzeResponse | null> {
-    const raw = await callModel(SYSTEM_PROMPT, text, 1200)
+    const raw = await callModel(SYSTEM_PROMPT, text, MAX_TOKENS_READ_COMPARE)
     return extractJson<AnalyzeResponse>(raw)
   }
 
@@ -330,7 +343,7 @@ async function compareWithClaude(
   const userContent = `PASSAGE A:\n${a}\n\n---\n\nPASSAGE B:\n${b}`
 
   async function attempt(): Promise<CompareResponse | null> {
-    const raw = await callModel(COMPARE_SYSTEM_PROMPT, userContent, 1200)
+    const raw = await callModel(COMPARE_SYSTEM_PROMPT, userContent, MAX_TOKENS_READ_COMPARE)
     return extractJson<CompareResponse>(raw)
   }
 
@@ -367,7 +380,7 @@ async function selfWithClaude(text: string): Promise<SelfResponse> {
     const raw = await callModel(
       SELF_SYSTEM_PROMPT,
       text,
-      800,
+      MAX_TOKENS_YOURS,
       OPENROUTER_SELF_MODEL
     )
     return extractJson<SelfResponse>(raw)
@@ -719,7 +732,7 @@ export async function* analyzeStream(
     yield* mockToStream(mockAnalyze(text))
     return
   }
-  yield* runStream(SYSTEM_PROMPT, text, [text], 1200)
+  yield* runStream(SYSTEM_PROMPT, text, [text], MAX_TOKENS_READ_COMPARE)
 }
 
 export async function* analyzeCompareStream(
@@ -731,7 +744,7 @@ export async function* analyzeCompareStream(
     return
   }
   const userContent = `PASSAGE A:\n${a}\n\n---\n\nPASSAGE B:\n${b}`
-  yield* runStream(COMPARE_SYSTEM_PROMPT, userContent, [a, b], 1200)
+  yield* runStream(COMPARE_SYSTEM_PROMPT, userContent, [a, b], MAX_TOKENS_READ_COMPARE)
 }
 
 export async function* analyzeSelfStream(
@@ -741,7 +754,7 @@ export async function* analyzeSelfStream(
     yield* mockToStream(mockSelf(text))
     return
   }
-  yield* runStream(SELF_SYSTEM_PROMPT, text, [text], 800, OPENROUTER_SELF_MODEL)
+  yield* runStream(SELF_SYSTEM_PROMPT, text, [text], MAX_TOKENS_YOURS, OPENROUTER_SELF_MODEL)
 }
 
 async function* mockToStream(
