@@ -3,6 +3,7 @@
 import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
 import { LoadingPhrase } from "./LoadingPhrase"
+import { ModKey } from "./ModKey"
 
 export function SelfInputView({
   value,
@@ -42,7 +43,7 @@ export function SelfInputView({
             <LoadingPhrase initial="Reading" />
           ) : (
             <>
-              <kbd className="font-sans">⌘</kbd>
+              <ModKey />
               <span> + </span>
               <kbd className="font-sans">↵</kbd>
               <span> to read</span>

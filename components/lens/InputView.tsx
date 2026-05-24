@@ -4,6 +4,7 @@ import { useRef } from "react"
 import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
 import { LoadingPhrase } from "./LoadingPhrase"
+import { ModKey } from "./ModKey"
 
 export function InputView({
   value,
@@ -47,7 +48,7 @@ export function InputView({
             <LoadingPhrase initial="Reading" />
           ) : (
             <>
-              <kbd className="font-sans">⌘</kbd>
+              <ModKey />
               <span> + </span>
               <kbd className="font-sans">↵</kbd>
               <span> to read closely</span>
