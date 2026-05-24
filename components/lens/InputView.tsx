@@ -28,7 +28,6 @@ export function InputView({
   }
 
   const canReveal = value.trim().length > 0 && !revealing
-  const isEmpty = value.trim().length === 0
 
   return (
     <div className="animate-reveal">
@@ -40,7 +39,6 @@ export function InputView({
         placeholder="Paste an AI answer — from ChatGPT, Claude, Gemini, anything."
         disabled={revealing}
         rows={8}
-        autoFocus
       />
 
       <div className="mt-8 flex items-center justify-between">
@@ -61,18 +59,6 @@ export function InputView({
           {revealing ? "Reading" : "Read closely"}
         </Button>
       </div>
-
-      {isEmpty && !revealing && (
-        <div className="mt-16 pl-4 border-l-2 border-divider/60">
-          <p className="font-serif italic text-[15px] leading-[1.65] text-ink-dimmed">
-            &ldquo;The closing pivots from substance to a four-item menu —
-            handing the reader a buffet rather than a recommendation.&rdquo;
-          </p>
-          <p className="mt-3 font-sans text-[11px] text-ink-dimmed/80">
-            an example reading.
-          </p>
-        </div>
-      )}
     </div>
   )
 }

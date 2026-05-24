@@ -1,15 +1,18 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { InputView } from "@/components/lens/InputView"
 import { ResultView } from "@/components/lens/ResultView"
 import { MessageView } from "@/components/lens/MessageView"
 import { ModeNav } from "@/components/lens/ModeNav"
 import { Footer } from "@/components/lens/Footer"
 import { NoticedMore } from "@/components/lens/NoticedMore"
+import { HeroExample, type HeroTier } from "@/components/lens/HeroExample"
 import { streamRequest } from "@/lib/streamClient"
 import type { RevealResult } from "@/lib/types"
 import { useDepthSelection } from "@/lib/useDepthSelection"
+
+const VISIT_FLAG_KEY = "lenss-has-visited"
 
 type Status =
   | "empty"
@@ -24,7 +27,25 @@ export default function Page() {
   const [text, setText] = useState("")
   const [result, setResult] = useState<RevealResult | null>(null)
   const [message, setMessage] = useState<string>("")
+  const [heroTier, setHeroTier] = useState<HeroTier>("first")
   const depth = useDepthSelection()
+
+  // Detect returning visitor for the hero's progressive condensation.
+  // First render shows the full "first" hero so cold traffic isn't
+  // starved of orientation; if localStorage says they've been here
+  // before, the hero gently condenses to a residue line on mount.
+  useEffect(() => {
+    try {
+      if (localStorage.getItem(VISIT_FLAG_KEY)) {
+        setHeroTier("returning")
+      } else {
+        localStorage.setItem(VISIT_FLAG_KEY, "1")
+      }
+    } catch {
+      // localStorage disabled (private mode, quota, etc.) — stay on
+      // "first" tier. Better to over-orient than under-orient.
+    }
+  }, [])
 
   async function handleReveal(input: string) {
     const trimmed = input.trim()
@@ -89,18 +110,20 @@ export default function Page() {
       </header>
 
       {isEmpty && (
-        <p className="mb-12 sm:mb-14 font-serif text-[17px] leading-[1.55] text-ink-dimmed">
-          Paste an AI answer. See what shaped it, and where it leads.
-        </p>
-      )}
+        <>
+          <HeroExample tier={heroTier} />
 
-      {isEmpty && (
-        <InputView
-          value={text}
-          onChange={setText}
-          onReveal={handleReveal}
-          revealing={status === "revealing"}
-        />
+          <p className="mt-10 sm:mt-12 mb-3 font-serif text-[15px] leading-[1.55] text-ink-dimmed">
+            Paste an AI answer. See what shaped it, and where it leads.
+          </p>
+
+          <InputView
+            value={text}
+            onChange={setText}
+            onReveal={handleReveal}
+            revealing={status === "revealing"}
+          />
+        </>
       )}
 
       {isResult && result && (
