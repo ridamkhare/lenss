@@ -53,7 +53,7 @@ export function HeroExample({ tier }: { tier: HeroTier }) {
       <p className="font-sans text-[11px] text-ink-dimmed/70 mb-3">
         AI response
       </p>
-      <p className="font-serif text-[15px] leading-[1.6] text-ink-dimmed whitespace-pre-wrap">
+      <p className="font-serif text-[14px] leading-[1.6] text-ink-dimmed/80 whitespace-pre-wrap">
         {EXAMPLE_PASSAGE}
       </p>
 
