@@ -7,3 +7,8 @@ dist
 .DS_Store
 *.log
 next-env.d.ts
+.vercel
+
+# Ecosystem siblings — independent projects with their own git history.
+# They live here for filesystem convenience but must never ship with the web app.
+apps/
