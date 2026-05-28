@@ -11,11 +11,15 @@ export function InputView({
   onChange,
   onReveal,
   revealing,
+  showClear,
+  onClear,
 }: {
   value: string
   onChange: (v: string) => void
   onReveal: (v: string) => void
   revealing: boolean
+  showClear?: boolean
+  onClear?: () => void
 }) {
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
@@ -32,15 +36,31 @@ export function InputView({
 
   return (
     <div className="animate-reveal">
-      <Textarea
-        ref={textareaRef}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        onKeyDown={handleKeyDown}
-        placeholder="Paste an AI answer — from ChatGPT, Claude, Gemini, anything."
-        disabled={revealing}
-        rows={8}
-      />
+      <div className="relative">
+        <Textarea
+          ref={textareaRef}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder="Paste an AI answer — from ChatGPT, Claude, Gemini, anything."
+          disabled={revealing}
+          rows={8}
+        />
+        {showClear && !revealing && onClear && (
+          <button
+            type="button"
+            onClick={() => {
+              onClear()
+              textareaRef.current?.focus()
+            }}
+            title="Clear and paste your own"
+            aria-label="Clear sample and paste your own"
+            className="absolute top-3 right-3 font-sans text-[11px] text-ink-dimmed hover:text-ink transition-colors duration-200 px-1.5 py-0.5 rounded"
+          >
+            ✕ clear
+          </button>
+        )}
+      </div>
 
       <div className="mt-8 flex items-center justify-between">
         <span className="font-sans text-[12px] text-ink-dimmed">

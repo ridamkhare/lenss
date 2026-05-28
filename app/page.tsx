@@ -14,6 +14,9 @@ import { useDepthSelection } from "@/lib/useDepthSelection"
 
 const VISIT_FLAG_KEY = "lenss-has-visited"
 
+const SAMPLE_PASSAGE =
+  "Here are some practical tips for asking your boss for a raise: 1) Document your accomplishments over the past year with specific metrics and examples. 2) Research market rates for your role so you have data to back your request. 3) Anticipate objections — be ready to address concerns about budget, timing, or workload. 4) Schedule a formal meeting; don't bring it up casually. 5) Frame your ask around the value you've added to the company. 6) Stay calm and professional, even if the initial answer is no. Remember, the goal is to make it easy for your boss to say yes."
+
 type Status =
   | "empty"
   | "revealing" // model called, no signals yet
@@ -40,6 +43,11 @@ export default function Page() {
         setHeroTier("returning")
       } else {
         localStorage.setItem(VISIT_FLAG_KEY, "1")
+        // First visit: pre-fill the textarea with a sample so the visitor
+        // has something to click "Read closely" on without bringing their
+        // own text. The corner ✕ clears it cleanly if they want to paste
+        // their own instead.
+        setText(SAMPLE_PASSAGE)
       }
     } catch {
       // localStorage disabled (private mode, quota, etc.) — stay on
@@ -122,6 +130,8 @@ export default function Page() {
             onChange={setText}
             onReveal={handleReveal}
             revealing={status === "revealing"}
+            showClear={text === SAMPLE_PASSAGE}
+            onClear={() => setText("")}
           />
         </>
       )}
