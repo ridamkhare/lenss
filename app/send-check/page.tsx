@@ -42,6 +42,38 @@ interface MeResponse {
 
 const TOKEN_STORAGE_KEY = "lenss-session-token"
 
+// Friendly copy per error code surfaced by /api/auth/activate and
+// /api/auth/google/callback via ?activation_error=. Unknown codes fall back
+// to a generic message that still includes the code so we can diagnose from
+// a user's screenshot instead of guessing.
+function messageForAuthError(code: string): string {
+  switch (code) {
+    case "expired_or_unknown":
+      return "That link expired. Sign up again to get a fresh one."
+    case "google_cancelled":
+      return "Sign-in was cancelled. Try again to continue."
+    case "missing_params":
+      return "Google's response was missing required fields. Try signing in again."
+    case "state_mismatch":
+      return "Sign-in session expired or cookies were blocked. Try again — and check that your browser allows cookies for lenss.one."
+    case "oauth_misconfigured":
+      return "Google sign-in isn't configured on the server. Email hello@lenss.one and we'll fix it."
+    case "token_exchange_failed":
+    case "token_exchange_error":
+    case "no_access_token":
+      return "Google couldn't verify the sign-in. Try again in a moment."
+    case "userinfo_failed":
+    case "userinfo_error":
+      return "Couldn't read your Google profile after sign-in. Try again."
+    case "no_email":
+      return "That Google account doesn't have an email attached. Try a different account."
+    case "email_not_verified":
+      return "That Google account's email isn't verified. Verify it with Google, then try again."
+    default:
+      return `Sign-in failed (${code}). Try again, or email hello@lenss.one if it keeps happening.`
+  }
+}
+
 export default function SendCheckPage() {
   return (
     <Suspense fallback={<main className="mx-auto w-full max-w-reading px-6 sm:px-8 pt-20 sm:pt-28 pb-20" />}>
@@ -90,11 +122,7 @@ function SendCheckInner() {
       }
       router.replace("/send-check")
     } else if (urlError) {
-      setActivationError(
-        urlError === "expired_or_unknown"
-          ? "That link expired. Sign up again to get a fresh one."
-          : "Something went wrong activating that link."
-      )
+      setActivationError(messageForAuthError(urlError))
       router.replace("/send-check")
     }
 
