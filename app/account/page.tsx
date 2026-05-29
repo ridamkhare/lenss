@@ -76,7 +76,7 @@ function AccountInner() {
     }
   }
 
-  async function handleStartTrial() {
+  async function postWithToken(url: string, errMsg: string) {
     const token = (() => {
       try { return localStorage.getItem(TOKEN_STORAGE_KEY) } catch { return null }
     })()
@@ -84,17 +84,17 @@ function AccountInner() {
     setActionState("loading")
     setActionMessage("")
     try {
-      const res = await fetch("/api/account/start-trial", {
+      const res = await fetch(url, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
       })
       const data = await res.json()
       if (!res.ok) {
         setActionState("error")
-        setActionMessage(data?.error || "Couldn't start the trial. Try again.")
+        setActionMessage(data?.error || errMsg)
         return
       }
-      // Refresh /api/me to reflect new trial state
+      // Refresh /api/me to reflect new state
       const refresh = await fetch("/api/me", {
         headers: { Authorization: `Bearer ${token}` },
       })
@@ -103,8 +103,16 @@ function AccountInner() {
       setActionState("idle")
     } catch {
       setActionState("error")
-      setActionMessage("Couldn't start the trial. Try again.")
+      setActionMessage(errMsg)
     }
+  }
+
+  async function handleStartTrial() {
+    await postWithToken("/api/account/start-trial", "Couldn't start the trial. Try again.")
+  }
+
+  async function handleSwitchToFree() {
+    await postWithToken("/api/account/switch-to-free", "Couldn't switch back to Free. Try again.")
   }
 
   async function handleManageSubscription() {
@@ -218,65 +226,15 @@ function AccountInner() {
           </section>
 
           <section className="pt-4 border-t border-divider">
-            <div className="flex flex-wrap gap-3">
-              {me.plan === "free" && (
-                <>
-                  <button
-                    type="button"
-                    onClick={handleStartTrial}
-                    disabled={actionState === "loading"}
-                    className="inline-flex items-center gap-2 px-6 py-3 bg-ink text-paper font-sans text-[14px] font-medium rounded-md hover:bg-ink/85 transition-colors duration-200 disabled:opacity-50"
-                  >
-                    {actionState === "loading" ? "Starting…" : "Try Pro free for 10 days"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleUpgrade}
-                    disabled={actionState === "loading"}
-                    className="inline-flex items-center gap-2 px-6 py-3 border border-divider text-ink font-sans text-[14px] font-medium rounded-md hover:border-ink-dimmed transition-colors duration-200 disabled:opacity-50"
-                  >
-                    Or upgrade to Pro — $19/mo
-                  </button>
-                </>
-              )}
-              {me.plan === "trial" && (
-                <button
-                  type="button"
-                  onClick={handleUpgrade}
-                  disabled={actionState === "loading"}
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-ink text-paper font-sans text-[14px] font-medium rounded-md hover:bg-ink/85 transition-colors duration-200 disabled:opacity-50"
-                >
-                  {actionState === "loading" ? "Opening…" : "Continue to Pro — $19/mo"}
-                </button>
-              )}
-              {me.plan === "lapsed" && (
-                <button
-                  type="button"
-                  onClick={handleManageSubscription}
-                  disabled={actionState === "loading"}
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-ink text-paper font-sans text-[14px] font-medium rounded-md hover:bg-ink/85 transition-colors duration-200 disabled:opacity-50"
-                >
-                  {actionState === "loading" ? "Opening…" : "Fix billing"}
-                </button>
-              )}
-              {me.plan === "active" && (
-                <button
-                  type="button"
-                  onClick={handleManageSubscription}
-                  disabled={actionState === "loading"}
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-ink text-paper font-sans text-[14px] font-medium rounded-md hover:bg-ink/85 transition-colors duration-200 disabled:opacity-50"
-                >
-                  {actionState === "loading" ? "Opening…" : "Manage subscription"}
-                </button>
-              )}
-              <button
-                type="button"
-                onClick={handleSignOut}
-                className="px-6 py-3 border border-divider text-ink-dimmed font-sans text-[14px] rounded-md hover:text-ink hover:border-ink-dimmed transition-colors duration-200"
-              >
-                Sign out
-              </button>
-            </div>
+            <PlanActions
+              me={me}
+              actionState={actionState}
+              onStartTrial={handleStartTrial}
+              onSwitchToFree={handleSwitchToFree}
+              onUpgrade={handleUpgrade}
+              onManageSubscription={handleManageSubscription}
+              onSignOut={handleSignOut}
+            />
             {actionState === "error" && (
               <p className="mt-3 font-sans text-[12px] text-ink-dimmed italic">{actionMessage}</p>
             )}
@@ -289,11 +247,111 @@ function AccountInner() {
   )
 }
 
+function PlanActions({
+  me,
+  actionState,
+  onStartTrial,
+  onSwitchToFree,
+  onUpgrade,
+  onManageSubscription,
+  onSignOut,
+}: {
+  me: MeResponse
+  actionState: "idle" | "loading" | "error"
+  onStartTrial: () => void
+  onSwitchToFree: () => void
+  onUpgrade: () => void
+  onManageSubscription: () => void
+  onSignOut: () => void
+}) {
+  const loading = actionState === "loading"
+  const trialEnds = me.trial_ends_at ? new Date(me.trial_ends_at) : null
+  const trialInFuture = trialEnds ? trialEnds.getTime() > Date.now() : false
+  const daysLeft = trialEnds
+    ? Math.max(0, Math.ceil((trialEnds.getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+    : 0
+
+  const primary =
+    "inline-flex items-center gap-2 px-6 py-3 bg-ink text-paper font-sans text-[14px] font-medium rounded-md hover:bg-ink/85 transition-colors duration-200 disabled:opacity-50"
+  const secondary =
+    "inline-flex items-center gap-2 px-6 py-3 border border-divider text-ink font-sans text-[14px] font-medium rounded-md hover:border-ink-dimmed transition-colors duration-200 disabled:opacity-50"
+  const signOut =
+    "px-6 py-3 border border-divider text-ink-dimmed font-sans text-[14px] rounded-md hover:text-ink hover:border-ink-dimmed transition-colors duration-200"
+
+  return (
+    <div className="flex flex-wrap gap-3">
+      {/* Free + never used trial */}
+      {me.plan === "free" && !trialEnds && (
+        <>
+          <button type="button" onClick={onStartTrial} disabled={loading} className={primary}>
+            {loading ? "Starting…" : "Try Pro free for 10 days"}
+          </button>
+          <button type="button" onClick={onUpgrade} disabled={loading} className={secondary}>
+            Or upgrade to Pro — $19/mo
+          </button>
+        </>
+      )}
+
+      {/* Free + trial paused, time remaining */}
+      {me.plan === "free" && trialInFuture && (
+        <>
+          <button type="button" onClick={onStartTrial} disabled={loading} className={primary}>
+            {loading ? "Resuming…" : `Resume Pro trial — ${daysLeft} ${daysLeft === 1 ? "day" : "days"} left`}
+          </button>
+          <button type="button" onClick={onUpgrade} disabled={loading} className={secondary}>
+            Or upgrade to Pro — $19/mo
+          </button>
+        </>
+      )}
+
+      {/* Free + trial expired */}
+      {me.plan === "free" && trialEnds && !trialInFuture && (
+        <button type="button" onClick={onUpgrade} disabled={loading} className={primary}>
+          {loading ? "Opening…" : "Upgrade to Pro — $19/mo"}
+        </button>
+      )}
+
+      {/* Trial */}
+      {me.plan === "trial" && (
+        <>
+          <button type="button" onClick={onUpgrade} disabled={loading} className={primary}>
+            {loading ? "Opening…" : "Continue to Pro — $19/mo"}
+          </button>
+          <button type="button" onClick={onSwitchToFree} disabled={loading} className={secondary}>
+            {loading ? "Switching…" : "Switch back to Free"}
+          </button>
+        </>
+      )}
+
+      {/* Active */}
+      {me.plan === "active" && (
+        <button type="button" onClick={onManageSubscription} disabled={loading} className={primary}>
+          {loading ? "Opening…" : "Manage subscription"}
+        </button>
+      )}
+
+      {/* Lapsed */}
+      {me.plan === "lapsed" && (
+        <button type="button" onClick={onManageSubscription} disabled={loading} className={primary}>
+          {loading ? "Opening…" : "Fix billing"}
+        </button>
+      )}
+
+      <button type="button" onClick={onSignOut} className={signOut}>
+        Sign out
+      </button>
+    </div>
+  )
+}
+
 function PlanLine({ me }: { me: MeResponse }) {
-  if (me.plan === "trial" && me.trial_ends_at) {
-    const daysLeft = Math.max(0, Math.ceil(
-      (new Date(me.trial_ends_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
-    ))
+  const trialEnds = me.trial_ends_at ? new Date(me.trial_ends_at) : null
+  const trialInFuture = trialEnds ? trialEnds.getTime() > Date.now() : false
+  const daysLeft = trialEnds
+    ? Math.max(0, Math.ceil((trialEnds.getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+    : 0
+
+  if (me.plan === "trial" && trialInFuture) {
     return (
       <p className="font-serif text-[17px] text-ink">
         Pro trial · <span className="text-ink-dimmed">{daysLeft} {daysLeft === 1 ? "day" : "days"} left</span>
@@ -307,6 +365,14 @@ function PlanLine({ me }: { me: MeResponse }) {
     return (
       <p className="font-serif text-[17px] text-ink">
         Pro · <span className="text-ink-dimmed">payment failed</span>
+      </p>
+    )
+  }
+  // Free
+  if (trialInFuture) {
+    return (
+      <p className="font-serif text-[17px] text-ink">
+        Free · <span className="text-ink-dimmed">Pro trial paused — {daysLeft} {daysLeft === 1 ? "day" : "days"} left to resume</span>
       </p>
     )
   }

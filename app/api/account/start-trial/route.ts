@@ -9,19 +9,19 @@ export const runtime = "nodejs"
 const TRIAL_DAYS = 10
 
 /**
- * POST /api/account/start-trial — flips a free user into a 10-day Pro trial.
+ * POST /api/account/start-trial — starts OR resumes a 10-day Pro trial.
  *
- * Trial is one-time per user — once started (and ended), they can't restart
- * it. To get Pro again after trial, they must upgrade via Stripe Checkout.
+ * Bidirectional model: user can switch between Free and Pro Trial freely
+ * while the trial clock is still ticking. Real-time clock — switching back
+ * to Free doesn't pause the trial; clock keeps elapsing in real time.
  *
- * Enforced state transitions:
- *   - free          → trial (allowed; sets timestamps)
- *   - trial         → no-op (already trialing)
- *   - active/lapsed → rejected (they're already paying or already had one)
- *
- * Idempotent on free→trial: if called twice while already free, the second
- * call would also flip to trial. We guard against this with trialStartedAt:
- * if it's already set (even after revert to free), they've used their trial.
+ * Enforced transitions:
+ *   - free, no prior trial          → start fresh 10-day trial
+ *   - free, trial_ends_at in future → resume trial (timestamps preserved)
+ *   - free, trial_ends_at in past   → reject (trial used up; must upgrade)
+ *   - trial                         → no-op (already trialing)
+ *   - active                        → reject (already paying)
+ *   - lapsed                        → reject (must fix billing first)
  */
 
 export async function POST(req: NextRequest) {
@@ -54,29 +54,47 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  // Check the user hasn't already used a trial
   const [row] = await db
-    .select({ trialStartedAt: schema.users.trialStartedAt })
+    .select({
+      trialStartedAt: schema.users.trialStartedAt,
+      trialEndsAt: schema.users.trialEndsAt,
+    })
     .from(schema.users)
     .where(eq(schema.users.id, user.id))
     .limit(1)
-  if (row?.trialStartedAt) {
-    return NextResponse.json(
-      { error: "You've already used your free trial. Upgrade to Pro to continue." },
-      { status: 400 }
-    )
-  }
 
   const now = new Date()
-  const endsAt = new Date(now.getTime() + TRIAL_DAYS * 24 * 60 * 60 * 1000)
-  await db
-    .update(schema.users)
-    .set({
-      plan: "trial",
-      trialStartedAt: now,
-      trialEndsAt: endsAt,
-    })
-    .where(eq(schema.users.id, user.id))
 
-  return NextResponse.json({ ok: true, trialEndsAt: endsAt.toISOString() })
+  // Case 1: First-time trial — set timestamps fresh
+  if (!row?.trialStartedAt || !row?.trialEndsAt) {
+    const endsAt = new Date(now.getTime() + TRIAL_DAYS * 24 * 60 * 60 * 1000)
+    await db
+      .update(schema.users)
+      .set({
+        plan: "trial",
+        trialStartedAt: now,
+        trialEndsAt: endsAt,
+      })
+      .where(eq(schema.users.id, user.id))
+    return NextResponse.json({ ok: true, trialEndsAt: endsAt.toISOString() })
+  }
+
+  // Case 2: Resuming — trial clock still in the future, just flip the plan
+  if (row.trialEndsAt > now) {
+    await db
+      .update(schema.users)
+      .set({ plan: "trial" })
+      .where(eq(schema.users.id, user.id))
+    return NextResponse.json({
+      ok: true,
+      resumed: true,
+      trialEndsAt: row.trialEndsAt.toISOString(),
+    })
+  }
+
+  // Case 3: Trial already used up
+  return NextResponse.json(
+    { error: "Your free trial has ended. Upgrade to Pro to continue." },
+    { status: 400 }
+  )
 }

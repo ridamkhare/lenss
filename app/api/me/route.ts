@@ -151,10 +151,9 @@ export async function GET(req: NextRequest) {
     {
       plan: user.plan,
       email: user.email,
-      trial_ends_at:
-        user.plan === "trial" && user.trialEndsAt
-          ? user.trialEndsAt.toISOString()
-          : null,
+      // Returned for both trial and free plans so /account can compute
+      // "resume trial — N days left" when a free user has a paused trial
+      trial_ends_at: user.trialEndsAt ? user.trialEndsAt.toISOString() : null,
       reveals_today: revealsToday,
       personas_count: personasCount,
       history_count: historyCount,
