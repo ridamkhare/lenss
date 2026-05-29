@@ -66,3 +66,71 @@ export function isDeclined(
 ): r is DeclinedResult {
   return "declined" in r && r.declined === true
 }
+
+
+/* ────────────────────────────────────────────────────────────────────
+   Pre-Send (Email vertical) types
+   ──────────────────────────────────────────────────────────────────── */
+
+/**
+ * Recipient archetype. The form surfaces 8 quick-pick chips (boss, peer,
+ * customer, investor, team, family, stranger, hostile) but accepts any
+ * user-typed label too — co-founder, ex-partner, thesis advisor, etc.
+ * API-side validation: 1-30 chars, alphanumeric + space/hyphen/apostrophe,
+ * must start with a letter.
+ */
+export type RecipientArchetype = string
+
+export const PREDEFINED_ARCHETYPES = [
+  "boss",
+  "peer",
+  "customer",
+  "investor",
+  "team",
+  "family",
+  "stranger",
+  "hostile",
+] as const
+
+export interface RecipientInput {
+  archetype: RecipientArchetype
+  context?: string | null
+}
+
+export type ReplyAction = "reply" | "ignore" | "escalate" | "push_back" | "ghost"
+
+export interface RecipientReading {
+  recipient: RecipientArchetype
+  context?: string | null
+  subject_notice: string
+  body_notice: string
+  reply_likelihood: {
+    action: ReplyAction
+    reason: string
+  }
+}
+
+export type SendReadiness = "ship" | "review" | "reconsider"
+
+export interface MetaSynthesis {
+  meta_pattern: string
+  send_readiness: SendReadiness
+  send_readiness_reason: string
+}
+
+export interface SendCheckResult {
+  per_recipient: RecipientReading[]
+  meta?: MetaSynthesis
+  declined?: { recipient?: RecipientArchetype; reason: string }
+}
+
+export type RateLimitKind = "anon_used" | "daily_cap_reached"
+
+export type SendCheckStreamEvent =
+  | { type: "recipient"; reading: RecipientReading }
+  | { type: "recipient_declined"; recipient: RecipientArchetype; reason: string }
+  | { type: "meta"; meta: MetaSynthesis }
+  | { type: "declined"; reason: string }
+  | { type: "rate_limited"; kind: RateLimitKind; reason: string; cooldown_ends_at?: string }
+  | { type: "error"; reason: string }
+  | { type: "done"; check_id: string }
