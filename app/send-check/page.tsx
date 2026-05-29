@@ -449,19 +449,16 @@ function PlanBadge({ me }: { me: MeResponse | null }) {
   }
 
   if (me.plan === "free") {
-    // Mirror the anon nudge pattern — point free users at their next
-    // conversion event (start trial, resume trial, or upgrade), not just
-    // a passive "free" label.
+    // Two states from the user's perspective: "haven't tried Pro yet" or
+    // "tried it, expired, now must pay". The bidirectional resume/pause
+    // state from /account doesn't belong in the header — it confuses users
+    // who never deliberately started a trial. Backend handles the actual
+    // resume-vs-fresh-start when they click through.
     const trialEnds = me.trial_ends_at ? new Date(me.trial_ends_at) : null
-    const trialInFuture = trialEnds ? trialEnds.getTime() > Date.now() : false
-    let label: string
-    if (!trialEnds) {
-      label = "try pro free →"
-    } else if (trialInFuture) {
-      label = "resume pro →"
-    } else {
-      label = "upgrade to pro →"
-    }
+    const trialExpired = trialEnds ? trialEnds.getTime() <= Date.now() : false
+    const label = trialExpired
+      ? "upgrade to pro →"
+      : "try pro free →"
     return (
       <Link href="/account" className={className}>
         {label}
@@ -475,30 +472,16 @@ function PlanBadge({ me }: { me: MeResponse | null }) {
 
 function FreeUpgradeHint({ trialEndsAt }: { trialEndsAt: string | null }) {
   const trialEnds = trialEndsAt ? new Date(trialEndsAt) : null
-  const trialInFuture = trialEnds ? trialEnds.getTime() > Date.now() : false
-  const daysLeft = trialEnds
-    ? Math.max(0, Math.ceil((trialEnds.getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
-    : 0
-
-  // Three states:
-  //   - never started trial   → offer 10-day free trial
-  //   - trial paused (future) → offer to resume
-  //   - trial expired         → offer paid upgrade only
-  let label: string
-  let href = "/account"
-  if (!trialEnds) {
-    label = "Try Pro free for 10 days →"
-  } else if (trialInFuture) {
-    label = `Resume Pro — ${daysLeft} ${daysLeft === 1 ? "day" : "days"} free left →`
-  } else {
-    label = "Upgrade to Pro — $19/mo →"
-  }
+  const trialExpired = trialEnds ? trialEnds.getTime() <= Date.now() : false
+  const label = trialExpired
+    ? "Upgrade to Pro — $19/mo →"
+    : "Try Pro free for 10 days →"
 
   return (
     <p className="mt-6 font-sans text-[12px] text-ink-dimmed/80 leading-[1.55]">
       Want more reveals, more recipients, more personas?{" "}
       <Link
-        href={href}
+        href="/account"
         className="underline decoration-divider underline-offset-2 hover:text-ink transition-colors"
       >
         {label}
