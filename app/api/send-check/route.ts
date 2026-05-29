@@ -108,15 +108,14 @@ export async function POST(req: NextRequest) {
           return
         }
 
-        // Gate (anon IP-throttle OR authed daily cap)
+        // Gate (anon IP daily cap OR authed daily cap)
         const gateResult = await gate(req)
         if (!gateResult.allow) {
           if (gateResult.reason === "anon_used") {
             emit({
               type: "rate_limited",
               kind: "anon_used",
-              reason: "Your one free check is in. Sign up for 14 days of unlimited Pro — no card, just email.",
-              cooldown_ends_at: gateResult.cooldownEndsAt.toISOString(),
+              reason: `You've used today's ${gateResult.capDaily} free reveals. Sign up free to unlock 5 reveals every day, multi-recipient simulation, saved personas, and full history.`,
             })
           } else if (gateResult.reason === "daily_cap_reached") {
             const isPro = gateResult.plan === "trial" || gateResult.plan === "active"
@@ -125,7 +124,7 @@ export async function POST(req: NextRequest) {
               kind: "daily_cap_reached",
               reason: isPro
                 ? `You've used today's ${gateResult.capDaily} reveals. Resets at midnight UTC.`
-                : `You've used today's ${gateResult.capDaily} free reveals. Upgrade for unlimited, or come back tomorrow.`,
+                : `You've used today's ${gateResult.capDaily} free reveals. Try Pro free for 10 days for unlimited reveals, or come back tomorrow.`,
             })
           } else {
             emit({
@@ -133,6 +132,18 @@ export async function POST(req: NextRequest) {
               reason: "Something went quiet on our side. Try again in a moment.",
             })
           }
+          return
+        }
+
+        // Anon users can only do single-recipient checks. Multi-recipient is
+        // a signup-gated feature — gives free users a real reason to sign up
+        // beyond just "more reveals."
+        if (gateResult.mode === "anon" && recipients.length > 1) {
+          emit({
+            type: "rate_limited",
+            kind: "anon_used",
+            reason: "Multi-recipient simulation is a signed-up feature. Sign up free to read your email against up to 4 different recipients at once.",
+          })
           return
         }
 

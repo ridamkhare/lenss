@@ -16,9 +16,11 @@ type Props = {
     recipients: RecipientInput[]
   }) => void
   busy: boolean
+  /** Max recipients per check based on the user's plan. Anon = 1, free+pro = 4. */
+  maxRecipients?: number
 }
 
-const MAX_RECIPIENTS = 4
+const HARD_MAX_RECIPIENTS = 4
 const ARCHETYPE_RE = /^[a-zA-Z][a-zA-Z0-9 \-']{0,29}$/
 
 function normalizeArchetype(raw: string): string | null {
@@ -26,7 +28,8 @@ function normalizeArchetype(raw: string): string | null {
   return ARCHETYPE_RE.test(trimmed) ? trimmed : null
 }
 
-export function SendCheckForm({ onSubmit, busy }: Props) {
+export function SendCheckForm({ onSubmit, busy, maxRecipients = HARD_MAX_RECIPIENTS }: Props) {
+  const MAX_RECIPIENTS = Math.min(maxRecipients, HARD_MAX_RECIPIENTS)
   const [subject, setSubject] = useState("")
   const [body, setBody] = useState("")
   const [selected, setSelected] = useState<RecipientArchetype[]>([])

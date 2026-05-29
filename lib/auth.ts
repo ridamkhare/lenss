@@ -76,7 +76,8 @@ export async function issueMagicTokenForEmail(emailRaw: string): Promise<{
     email,
     pendingMagicToken: magicToken,
     pendingMagicExpiresAt: expiresAt,
-    // plan + trial defaults handled by schema (trial / now / now+14d)
+    // plan defaults to "free" (schema). Pro trial is opt-in from /account,
+    // not automatic on signup — keeps the post-signup state honest.
   })
   return { email, magicToken, isNewUser: true }
 }
@@ -132,7 +133,7 @@ export interface ResolvedUser {
   id: string
   email: string
   plan: "trial" | "free" | "active" | "lapsed"
-  trialEndsAt: Date
+  trialEndsAt: Date | null
 }
 
 /**
@@ -168,7 +169,7 @@ export async function resolveSessionToken(
 
   const now = new Date()
   let plan = u.plan
-  if (plan === "trial" && u.trialEndsAt <= now) {
+  if (plan === "trial" && u.trialEndsAt && u.trialEndsAt <= now) {
     plan = "free"
     await db
       .update(schema.users)

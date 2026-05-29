@@ -42,14 +42,13 @@ export const users = pgTable(
       .defaultNow()
       .notNull(),
 
-    // Plan
-    plan: planEnum("plan").default("trial").notNull(),
-    trialStartedAt: timestamp("trial_started_at", { withTimezone: true })
-      .defaultNow()
-      .notNull(),
-    trialEndsAt: timestamp("trial_ends_at", { withTimezone: true })
-      .default(sql`now() + interval '14 days'`)
-      .notNull(),
+    // Plan — everyone signs up as "free" (5 reveals/day + saved personas +
+    // history). Pro trial is an explicit opt-in from /account, sets plan to
+    // "trial" with the timestamps filled in. trial_ends_at is nullable
+    // because most users will never start a trial.
+    plan: planEnum("plan").default("free").notNull(),
+    trialStartedAt: timestamp("trial_started_at", { withTimezone: true }),
+    trialEndsAt: timestamp("trial_ends_at", { withTimezone: true }),
 
     // Auth (one-token model: magic link IS the session token after activation)
     sessionToken: text("session_token"),
@@ -137,11 +136,20 @@ export const checks = pgTable(
   })
 )
 
-/* ──────────────── anon_checks (IP-throttle for first anonymous check) ──────────────── */
+/* ──────────────── anon_checks (per-IP daily throttle for anonymous checks) ──────────────── */
 
+import { integer, date } from "drizzle-orm/pg-core"
+
+/**
+ * Daily counter per IP for anonymous draft-checks. Single row per IP-hash;
+ * count + date reset atomically each day. Anon allowance: 3/day, single-
+ * recipient only (multi-recipient unlocks at signup).
+ */
 export const anonChecks = pgTable("anon_checks", {
   // sha256(ip + server-side salt) — never stores raw IP
   ipHash: text("ip_hash").primaryKey(),
+  checkCount: integer("check_count").default(0).notNull(),
+  countDate: date("count_date").defaultNow().notNull(),
   lastCheckAt: timestamp("last_check_at", { withTimezone: true })
     .defaultNow()
     .notNull(),

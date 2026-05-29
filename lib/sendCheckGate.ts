@@ -9,13 +9,15 @@ import type { NextRequest } from "next/server"
  *
  * Three states a request can be in:
  *   - authed (session token resolves) → daily-cap check against user's plan
- *   - anon, first time on this IP in 7 days → allowed, IP recorded
- *   - anon, IP already used a check in last 7 days → blocked, signup CTA shown
+ *   - anon under daily cap (3/day per IP) → allowed, counter incremented;
+ *     ALSO multi-recipient is gated for anon (single-recipient only — that
+ *     check happens upstream in the route, not here)
+ *   - anon at daily cap → blocked, signup CTA shown
  *
  * The IP itself is never stored — only sha256(ip + salt) lands in the DB.
  */
 
-const ANON_WINDOW_MS = 7 * 24 * 60 * 60 * 1000 // 7 days
+const ANON_DAILY_CAP = 3
 const FREE_DAILY = 5
 const PRO_DAILY = 50
 
@@ -47,9 +49,9 @@ function startOfTodayUtc(): Date {
 }
 
 export type GateResult =
-  | { allow: true; mode: "anon"; ipHash: string }
+  | { allow: true; mode: "anon"; ipHash: string; revealsToday: number; capDaily: number }
   | { allow: true; mode: "user"; user: ResolvedUser; revealsToday: number }
-  | { allow: false; reason: "anon_used"; cooldownEndsAt: Date }
+  | { allow: false; reason: "anon_used"; capDaily: number }
   | { allow: false; reason: "daily_cap_reached"; plan: ResolvedUser["plan"]; capDaily: number }
   | { allow: false; reason: "server_misconfigured" }
 
@@ -85,28 +87,44 @@ export async function gate(req: NextRequest): Promise<GateResult> {
     // Bearer header present but token doesn't resolve — fall through to anon.
   }
 
-  // 2. Anonymous path
+  // 2. Anonymous path — 3 reveals per IP per day
   try {
     const ip = clientIp(req)
     const ipHash = hashIp(ip)
-    const now = new Date()
-    const cutoff = new Date(now.getTime() - ANON_WINDOW_MS)
+    const today = todayDate()
     const existing = await db
-      .select({ lastCheckAt: schema.anonChecks.lastCheckAt })
+      .select({
+        checkCount: schema.anonChecks.checkCount,
+        countDate: schema.anonChecks.countDate,
+      })
       .from(schema.anonChecks)
       .where(eq(schema.anonChecks.ipHash, ipHash))
       .limit(1)
-    if (existing.length > 0 && existing[0].lastCheckAt > cutoff) {
-      const cooldownEndsAt = new Date(
-        existing[0].lastCheckAt.getTime() + ANON_WINDOW_MS
-      )
-      return { allow: false, reason: "anon_used", cooldownEndsAt }
+
+    let revealsToday = 0
+    if (existing.length > 0 && existing[0].countDate === today) {
+      revealsToday = existing[0].checkCount
     }
-    return { allow: true, mode: "anon", ipHash }
+
+    if (revealsToday >= ANON_DAILY_CAP) {
+      return { allow: false, reason: "anon_used", capDaily: ANON_DAILY_CAP }
+    }
+    return {
+      allow: true,
+      mode: "anon",
+      ipHash,
+      revealsToday,
+      capDaily: ANON_DAILY_CAP,
+    }
   } catch (err) {
     console.error("[gate] anon path failed:", err)
     return { allow: false, reason: "server_misconfigured" }
   }
+}
+
+/** UTC date string (YYYY-MM-DD) — matches Postgres date column format. */
+function todayDate(): string {
+  return new Date().toISOString().slice(0, 10)
 }
 
 /**
@@ -125,14 +143,24 @@ export async function recordCheck(opts: {
 }): Promise<void> {
   if (opts.gateResult.mode === "anon") {
     const now = new Date()
-    // Upsert: insert on first check, update last_check_at on a repeat
-    // (won't normally happen because the gate blocks repeats, but harmless).
+    const today = todayDate()
+    // Upsert: insert new row with count=1 on first check, or increment
+    // count for today. If countDate is yesterday, reset count to 1.
     await db
       .insert(schema.anonChecks)
-      .values({ ipHash: opts.gateResult.ipHash, lastCheckAt: now })
+      .values({
+        ipHash: opts.gateResult.ipHash,
+        checkCount: 1,
+        countDate: today,
+        lastCheckAt: now,
+      })
       .onConflictDoUpdate({
         target: schema.anonChecks.ipHash,
-        set: { lastCheckAt: now },
+        set: {
+          checkCount: sql`CASE WHEN ${schema.anonChecks.countDate} = ${today} THEN ${schema.anonChecks.checkCount} + 1 ELSE 1 END`,
+          countDate: today,
+          lastCheckAt: now,
+        },
       })
     return
   }

@@ -32,7 +32,12 @@ interface MeResponse {
   email?: string
   trial_ends_at?: string | null
   reveals_today?: number
-  caps?: { daily_reveals: number; personas: number; history: number }
+  caps?: {
+    daily_reveals: number
+    personas: number
+    history: number
+    max_recipients_per_check?: number
+  }
 }
 
 const TOKEN_STORAGE_KEY = "lenss-session-token"
@@ -237,9 +242,19 @@ function SendCheckInner() {
         Just the reading.
       </p>
 
-      <SendCheckForm onSubmit={handleSubmit} busy={busy} />
+      <SendCheckForm
+        onSubmit={handleSubmit}
+        busy={busy}
+        maxRecipients={me?.caps?.max_recipients_per_check ?? 4}
+      />
 
       <PlanFootnote me={me} busy={busy} />
+
+      {isAnon && status === "empty" && (
+        <p className="mt-6 font-sans text-[12px] text-ink-dimmed/80 leading-[1.55]">
+          You have {Math.max(0, 3 - (me?.reveals_today ?? 0))} of 3 free reveals today, single recipient. Sign up free to unlock 5/day, multi-recipient simulation, saved personas, and history.
+        </p>
+      )}
 
       <SendCheckResults
         perRecipient={perRecipient}
@@ -301,6 +316,12 @@ function SendCheckInner() {
             check another draft
           </button>
         </div>
+      )}
+
+      {status === "complete" && isAnon && (
+        <p className="mt-6 font-sans text-[11px] text-ink-dimmed/80">
+          {Math.max(0, 3 - (me?.reveals_today ?? 0))} of 3 free reveals left today.
+        </p>
       )}
 
       {status === "empty" && isAnon && (
