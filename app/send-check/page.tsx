@@ -358,16 +358,18 @@ function SendCheckInner() {
 }
 
 function HeaderRight({ me }: { me: MeResponse | null }) {
+  // Loading state — render nothing (avoids "sign up → free" flicker for
+  // signed-in users whose me hasn't resolved yet)
+  if (!me) return null
+
   // Anon: prominent "sign up — free" link in the header.
-  // Signed-in: plan badge linking to /account.
-  if (!me || me.plan === "anon") {
+  if (me.plan === "anon") {
     return (
       <Link
         href="#signup"
         scroll={false}
         onClick={(e) => {
           e.preventDefault()
-          // Trigger inline signup CTA via a custom event the page listens for.
           window.dispatchEvent(new CustomEvent("lenss-show-signup"))
         }}
         className="font-sans text-[12px] tracking-[0.04em] lowercase text-ink hover:text-ink-dimmed transition-colors duration-200"
@@ -376,6 +378,8 @@ function HeaderRight({ me }: { me: MeResponse | null }) {
       </Link>
     )
   }
+
+  // Signed-in: plan badge linking to /account.
   return <PlanBadge me={me} />
 }
 
