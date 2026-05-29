@@ -247,6 +247,11 @@ function AccountInner() {
   )
 }
 
+function formatTrialEnd(d: Date | null): string {
+  if (!d) return "trial end"
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" })
+}
+
 function PlanActions({
   me,
   actionState,
@@ -279,7 +284,13 @@ function PlanActions({
     "px-6 py-3 border border-divider text-ink-dimmed font-sans text-[14px] rounded-md hover:text-ink hover:border-ink-dimmed transition-colors duration-200"
 
   return (
-    <div className="flex flex-wrap gap-3">
+    <div>
+      {me.plan === "trial" && trialInFuture && (
+        <p className="font-sans text-[12px] text-ink-dimmed mb-4 leading-[1.55]">
+          You already have Pro features for the next {daysLeft} {daysLeft === 1 ? "day" : "days"} — no card needed. The button below lets you keep them after {formatTrialEnd(trialEnds)}. Your trial keeps running, no charge until then, cancel anytime before for free.
+        </p>
+      )}
+      <div className="flex flex-wrap gap-3">
       {/* Free + never used trial */}
       {me.plan === "free" && !trialEnds && (
         <>
@@ -311,11 +322,13 @@ function PlanActions({
         </button>
       )}
 
-      {/* Trial */}
+      {/* Trial — user already has Pro features; the action is "lock it in"
+          so they keep them after trial ends. Stripe collects card today,
+          first $19 charge is deferred until trial_end (set on checkout). */}
       {me.plan === "trial" && (
         <>
           <button type="button" onClick={onUpgrade} disabled={loading} className={primary}>
-            {loading ? "Opening…" : "Continue to Pro — $19/mo"}
+            {loading ? "Opening…" : `Stay on Pro after ${formatTrialEnd(trialEnds)}`}
           </button>
           <button type="button" onClick={onSwitchToFree} disabled={loading} className={secondary}>
             {loading ? "Switching…" : "Switch back to Free"}
@@ -340,6 +353,7 @@ function PlanActions({
       <button type="button" onClick={onSignOut} className={signOut}>
         Sign out
       </button>
+      </div>
     </div>
   )
 }

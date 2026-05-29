@@ -70,19 +70,33 @@ export async function POST(req: NextRequest) {
         .where(eq(schema.users.id, user.id))
     }
 
+    // If the user has time remaining on their in-app trial (whether
+    // currently active or paused as free), defer the first Stripe charge
+    // to that date. They get to keep their free trial days AND lock in
+    // continuity. Without this, clicking the button while in trial would
+    // charge them today and forfeit any remaining free days.
+    const [userRow] = await db
+      .select({ trialEndsAt: schema.users.trialEndsAt })
+      .from(schema.users)
+      .where(eq(schema.users.id, user.id))
+      .limit(1)
+    const now = new Date()
+    let trialEndUnix: number | undefined
+    if (userRow?.trialEndsAt && userRow.trialEndsAt.getTime() > now.getTime()) {
+      trialEndUnix = Math.floor(userRow.trialEndsAt.getTime() / 1000)
+    }
+
     const base = baseUrl(req)
     const session = await s.checkout.sessions.create({
       mode: "subscription",
       customer: customerId,
       line_items: [{ price: PRO_PRICE_ID, quantity: 1 }],
-      // 7-day Stripe trial in addition to the in-app trial — gives a buffer
-      // for users who upgrade mid-trial without being charged immediately.
       subscription_data: {
         metadata: { user_id: user.id },
+        ...(trialEndUnix ? { trial_end: trialEndUnix } : {}),
       },
       success_url: `${base}/account?upgrade=success`,
       cancel_url: `${base}/send-check?upgrade=canceled`,
-      // Pre-fill email so the user doesn't retype it
       customer_update: { address: "auto" },
       allow_promotion_codes: true,
     })
