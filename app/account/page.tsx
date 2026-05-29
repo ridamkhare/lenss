@@ -76,6 +76,37 @@ function AccountInner() {
     }
   }
 
+  async function handleStartTrial() {
+    const token = (() => {
+      try { return localStorage.getItem(TOKEN_STORAGE_KEY) } catch { return null }
+    })()
+    if (!token) return
+    setActionState("loading")
+    setActionMessage("")
+    try {
+      const res = await fetch("/api/account/start-trial", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        setActionState("error")
+        setActionMessage(data?.error || "Couldn't start the trial. Try again.")
+        return
+      }
+      // Refresh /api/me to reflect new trial state
+      const refresh = await fetch("/api/me", {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      const refreshed = await refresh.json()
+      setMe(refreshed)
+      setActionState("idle")
+    } catch {
+      setActionState("error")
+      setActionMessage("Couldn't start the trial. Try again.")
+    }
+  }
+
   async function handleManageSubscription() {
     const token = (() => {
       try { return localStorage.getItem(TOKEN_STORAGE_KEY) } catch { return null }
@@ -188,14 +219,44 @@ function AccountInner() {
 
           <section className="pt-4 border-t border-divider">
             <div className="flex flex-wrap gap-3">
-              {(me.plan === "trial" || me.plan === "free" || me.plan === "lapsed") && (
+              {me.plan === "free" && (
+                <>
+                  <button
+                    type="button"
+                    onClick={handleStartTrial}
+                    disabled={actionState === "loading"}
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-ink text-paper font-sans text-[14px] font-medium rounded-md hover:bg-ink/85 transition-colors duration-200 disabled:opacity-50"
+                  >
+                    {actionState === "loading" ? "Starting…" : "Try Pro free for 10 days"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleUpgrade}
+                    disabled={actionState === "loading"}
+                    className="inline-flex items-center gap-2 px-6 py-3 border border-divider text-ink font-sans text-[14px] font-medium rounded-md hover:border-ink-dimmed transition-colors duration-200 disabled:opacity-50"
+                  >
+                    Or upgrade to Pro — $19/mo
+                  </button>
+                </>
+              )}
+              {me.plan === "trial" && (
                 <button
                   type="button"
                   onClick={handleUpgrade}
                   disabled={actionState === "loading"}
                   className="inline-flex items-center gap-2 px-6 py-3 bg-ink text-paper font-sans text-[14px] font-medium rounded-md hover:bg-ink/85 transition-colors duration-200 disabled:opacity-50"
                 >
-                  {actionState === "loading" ? "Opening…" : me.plan === "lapsed" ? "Fix billing" : "Upgrade to Pro — $19/mo"}
+                  {actionState === "loading" ? "Opening…" : "Continue to Pro — $19/mo"}
+                </button>
+              )}
+              {me.plan === "lapsed" && (
+                <button
+                  type="button"
+                  onClick={handleManageSubscription}
+                  disabled={actionState === "loading"}
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-ink text-paper font-sans text-[14px] font-medium rounded-md hover:bg-ink/85 transition-colors duration-200 disabled:opacity-50"
+                >
+                  {actionState === "loading" ? "Opening…" : "Fix billing"}
                 </button>
               )}
               {me.plan === "active" && (

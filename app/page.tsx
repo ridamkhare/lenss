@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import Link from "next/link"
 import { InputView } from "@/components/lens/InputView"
 import { ResultView } from "@/components/lens/ResultView"
 import { MessageView } from "@/components/lens/MessageView"
@@ -171,6 +172,27 @@ export default function Page() {
           onReset={handleReset}
         />
       )}
+
+      <section className="mt-32 sm:mt-40 pt-10 border-t border-divider">
+        <p className="font-sans text-[11px] font-medium uppercase tracking-label text-ink-dimmed mb-4">
+          also from lenss
+        </p>
+        <Link
+          href="/draft-check"
+          className="group block rounded-md border border-divider bg-paper/50 hover:bg-paper/80 hover:border-ink-dimmed transition-colors duration-200 px-6 py-5"
+        >
+          <p className="font-sans text-[11px] font-medium uppercase tracking-label text-ink-dimmed mb-2 flex items-center gap-2">
+            <span aria-hidden className="inline-block h-1.5 w-1.5 rounded-full bg-[#efd356]" />
+            lenss for your outbox
+          </p>
+          <p className="font-serif text-[16px] leading-[1.55] text-ink mb-1">
+            Before you send that email, see what it&rsquo;s about to do to the reader.
+          </p>
+          <p className="font-sans text-[12px] text-ink-dimmed">
+            Try draft check — 3 free per day, no signup needed →
+          </p>
+        </Link>
+      </section>
 
       <Footer />
     </main>
