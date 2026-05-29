@@ -449,9 +449,22 @@ function PlanBadge({ me }: { me: MeResponse | null }) {
   }
 
   if (me.plan === "free") {
+    // Mirror the anon nudge pattern — point free users at their next
+    // conversion event (start trial, resume trial, or upgrade), not just
+    // a passive "free" label.
+    const trialEnds = me.trial_ends_at ? new Date(me.trial_ends_at) : null
+    const trialInFuture = trialEnds ? trialEnds.getTime() > Date.now() : false
+    let label: string
+    if (!trialEnds) {
+      label = "try pro free →"
+    } else if (trialInFuture) {
+      label = "resume pro →"
+    } else {
+      label = "upgrade to pro →"
+    }
     return (
       <Link href="/account" className={className}>
-        free
+        {label}
       </Link>
     )
   }
