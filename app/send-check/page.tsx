@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, Suspense } from "react"
+import { useState, useEffect, useRef, Suspense } from "react"
 import Link from "next/link"
 import { useSearchParams, useRouter } from "next/navigation"
 import { Footer } from "@/components/lens/Footer"
@@ -66,6 +66,16 @@ function SendCheckInner() {
   const [message, setMessage] = useState<string>("")
   const [rateLimitKind, setRateLimitKind] = useState<RateLimitKind | null>(null)
   const [showSignup, setShowSignup] = useState(false)
+  const signupCtaRef = useRef<HTMLDivElement | null>(null)
+
+  function openSignup() {
+    setShowSignup(true)
+    // Scroll the CTA into view after the next paint so it's visible
+    // instead of being rendered below the fold.
+    requestAnimationFrame(() => {
+      signupCtaRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })
+    })
+  }
 
   // On mount: capture activation token from URL (set by /api/auth/activate
   // redirect), persist to localStorage, strip from URL. Then fetch /api/me.
@@ -111,10 +121,6 @@ function SendCheckInner() {
       })
       .catch(() => setMe({ plan: "anon" }))
 
-    // Header signup link dispatches this event; reveal the inline CTA.
-    const onShowSignup = () => setShowSignup(true)
-    window.addEventListener("lenss-show-signup", onShowSignup)
-    return () => window.removeEventListener("lenss-show-signup", onShowSignup)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -236,7 +242,7 @@ function SendCheckInner() {
         >
           lenss
         </Link>
-        <HeaderRight me={me} />
+        <HeaderRight me={me} onSignupClick={openSignup} />
       </header>
 
       {activationError && (
@@ -273,7 +279,7 @@ function SendCheckInner() {
           You have {Math.max(0, 3 - (me?.reveals_today ?? 0))} of 3 free reveals today.{" "}
           <button
             type="button"
-            onClick={() => setShowSignup(true)}
+            onClick={openSignup}
             className="underline decoration-divider underline-offset-2 hover:text-ink transition-colors"
           >
             Sign up free
@@ -283,7 +289,9 @@ function SendCheckInner() {
       )}
 
       {isAnon && showSignup && (
-        <SendCheckSignupCta reason="Sign up free to unlock 5 reveals every day, save up to 3 recipient profiles, and keep your last 10 checks in history." />
+        <div ref={signupCtaRef}>
+          <SendCheckSignupCta reason="Sign up free to unlock 5 reveals every day, save up to 3 recipient profiles, and keep your last 10 checks in history." />
+        </div>
       )}
 
       <SendCheckResults
@@ -369,7 +377,13 @@ function SendCheckInner() {
   )
 }
 
-function HeaderRight({ me }: { me: MeResponse | null }) {
+function HeaderRight({
+  me,
+  onSignupClick,
+}: {
+  me: MeResponse | null
+  onSignupClick: () => void
+}) {
   // Loading state — render nothing (avoids "sign up → free" flicker for
   // signed-in users whose me hasn't resolved yet)
   if (!me) return null
@@ -379,7 +393,7 @@ function HeaderRight({ me }: { me: MeResponse | null }) {
     return (
       <button
         type="button"
-        onClick={() => window.dispatchEvent(new CustomEvent("lenss-show-signup"))}
+        onClick={onSignupClick}
         className="font-sans text-[12px] tracking-[0.04em] lowercase text-ink hover:text-ink-dimmed transition-colors duration-200"
       >
         sign up — free →
