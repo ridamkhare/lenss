@@ -434,8 +434,18 @@ function HeaderRight({
     )
   }
 
-  // Signed-in: plan badge linking to /account.
-  return <PlanBadge me={me} />
+  // Signed-in: history link + plan badge.
+  return (
+    <div className="flex items-center gap-5">
+      <Link
+        href="/history"
+        className="font-sans text-[12px] tracking-[0.04em] lowercase text-ink-dimmed hover:text-ink transition-colors duration-200"
+      >
+        history
+      </Link>
+      <PlanBadge me={me} />
+    </div>
+  )
 }
 
 function PlanBadge({ me }: { me: MeResponse | null }) {

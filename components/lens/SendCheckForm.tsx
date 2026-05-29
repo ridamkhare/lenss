@@ -61,6 +61,8 @@ export function SendCheckForm({
   const [personas, setPersonas] = useState<Persona[]>([])
   const [savingPersona, setSavingPersona] = useState<string | null>(null)
   const [personaError, setPersonaError] = useState<string | null>(null)
+  const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   useEffect(() => {
     if (customInputVisible) customInputRef.current?.focus()
@@ -124,6 +126,39 @@ export function SendCheckForm({
       setPersonaError("Couldn't save that persona. Try again.")
     } finally {
       setSavingPersona(null)
+    }
+  }
+
+  async function deletePersona(id: string) {
+    if (deletingId) return
+    setDeletingId(id)
+    setPersonaError(null)
+    const token = (() => {
+      try { return localStorage.getItem(TOKEN_STORAGE_KEY) } catch { return null }
+    })()
+    try {
+      const res = await fetch(`/api/personas/${id}`, {
+        method: "DELETE",
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        setPersonaError(data?.error || "Couldn't delete that persona.")
+        return
+      }
+      const removed = personas.find((p) => p.id === id)
+      setPersonas((prev) => prev.filter((p) => p.id !== id))
+      // If the deleted persona's label was selected, drop it from the picker
+      // (but only if no other persona shares that label, which the unique
+      // constraint already guarantees).
+      if (removed) {
+        setSelected((prev) => prev.filter((a) => a !== removed.label))
+      }
+      setConfirmingDeleteId(null)
+    } catch {
+      setPersonaError("Couldn't delete that persona. Try again.")
+    } finally {
+      setDeletingId(null)
     }
   }
 
@@ -238,26 +273,78 @@ export function SendCheckForm({
               {personas.map((p) => {
                 const isOn = selected.includes(p.label)
                 const disabled = busy || (!isOn && selected.length >= MAX_RECIPIENTS)
+                const isConfirming = confirmingDeleteId === p.id
+                const isDeleting = deletingId === p.id
+
+                if (isConfirming) {
+                  return (
+                    <div
+                      key={p.id}
+                      className="inline-flex items-stretch rounded-full border border-ink bg-paper text-[13px] font-sans overflow-hidden"
+                    >
+                      <span className="pl-4 pr-2 py-2 text-ink-dimmed">
+                        delete &ldquo;{p.label}&rdquo;?
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => deletePersona(p.id)}
+                        disabled={isDeleting}
+                        className="px-3 py-2 border-l border-ink text-ink hover:bg-ink hover:text-paper font-medium transition-colors duration-200 disabled:opacity-50"
+                      >
+                        {isDeleting ? "deleting…" : "yes"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setConfirmingDeleteId(null)}
+                        disabled={isDeleting}
+                        className="px-3 py-2 border-l border-ink text-ink-dimmed hover:text-ink transition-colors duration-200 disabled:opacity-50"
+                      >
+                        cancel
+                      </button>
+                    </div>
+                  )
+                }
+
                 return (
-                  <button
+                  <div
                     key={p.id}
-                    type="button"
-                    onClick={() => togglePersona(p)}
-                    disabled={disabled}
-                    title={p.context || ""}
-                    className={`px-4 py-2 rounded-full border text-[13px] font-sans transition-colors duration-200 disabled:opacity-40 disabled:cursor-not-allowed ${
+                    className={`inline-flex items-stretch rounded-full border text-[13px] font-sans transition-colors duration-200 ${
                       isOn
                         ? "border-ink bg-ink text-paper"
-                        : "border-ink-dimmed/40 bg-paper/50 text-ink-dimmed hover:text-ink hover:border-ink-dimmed"
+                        : "border-ink-dimmed/40 bg-paper/50 text-ink-dimmed"
                     }`}
                   >
-                    {p.label}
-                    {p.context && (
-                      <span className={`ml-1 text-[11px] ${isOn ? "text-paper/60" : "text-ink-dimmed/60"}`}>
-                        · {p.context.slice(0, 20)}{p.context.length > 20 ? "…" : ""}
-                      </span>
-                    )}
-                  </button>
+                    <button
+                      type="button"
+                      onClick={() => togglePersona(p)}
+                      disabled={disabled}
+                      title={p.context || ""}
+                      className={`pl-4 pr-2 py-2 disabled:opacity-40 disabled:cursor-not-allowed ${
+                        isOn ? "" : "hover:text-ink"
+                      }`}
+                    >
+                      {p.label}
+                      {p.context && (
+                        <span className={`ml-1 text-[11px] ${isOn ? "text-paper/60" : "text-ink-dimmed/60"}`}>
+                          · {p.context.slice(0, 20)}{p.context.length > 20 ? "…" : ""}
+                        </span>
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setConfirmingDeleteId(p.id)}
+                      disabled={busy}
+                      title="Delete this persona"
+                      aria-label={`Delete saved persona ${p.label}`}
+                      className={`px-2 py-2 text-[14px] border-l transition-colors duration-200 disabled:opacity-40 ${
+                        isOn
+                          ? "border-paper/30 text-paper/70 hover:text-paper hover:bg-ink/80"
+                          : "border-ink-dimmed/30 text-ink-dimmed/70 hover:text-ink"
+                      }`}
+                    >
+                      ×
+                    </button>
+                  </div>
                 )
               })}
             </div>
