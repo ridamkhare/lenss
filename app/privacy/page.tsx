@@ -84,11 +84,51 @@ export default function PrivacyPage() {
         </Block>
 
         <Block heading="What lenss does not collect">
-          No accounts. No login. No email address. No name. No payment
-          information. No browsing history outside the site itself. No
-          location more precise than country. No data sold or shared with
-          advertisers. No persistent identifier tying separate visits
-          together. The instrument has no memory of you between sessions.
+          No browsing history outside the site itself. No location more
+          precise than country. No data sold or shared with advertisers.
+          No persistent identifier tying separate visits together for
+          anonymous use of the reading surfaces.
+        </Block>
+
+        <Block heading="Accounts (lenss draft check)">
+          The draft-check tool at{" "}
+          <Link
+            href="/send-check"
+            className="underline decoration-divider underline-offset-2 hover:text-ink transition-colors"
+          >
+            /send-check
+          </Link>{" "}
+          supports optional accounts so you can keep history, save
+          recipient profiles, and run more reveals per day. When you sign
+          up we store your email address and a hashed session token; if
+          you sign in with Google we also store the Google account id. Your
+          drafts and the readings we generate for them are stored against
+          your account in our database (Neon Postgres) so you can revisit
+          them. Anonymous use of the reading surfaces does not create an
+          account.
+        </Block>
+
+        <Block heading="Payment (Pro subscription)">
+          If you upgrade to Pro, payment is processed by Razorpay. We
+          never see or store your card number, UPI id, or bank credentials
+          — those go directly to Razorpay, who handles them per their own
+          security and compliance terms. What we store is the Razorpay
+          customer and subscription identifiers, your subscription status,
+          and the trial-end timestamp. You can cancel any time from{" "}
+          <Link
+            href="/account"
+            className="underline decoration-divider underline-offset-2 hover:text-ink transition-colors"
+          >
+            /account
+          </Link>
+          ; see the{" "}
+          <Link
+            href="/refunds"
+            className="underline decoration-divider underline-offset-2 hover:text-ink transition-colors"
+          >
+            Refund &amp; Cancellation Policy
+          </Link>{" "}
+          for billing details.
         </Block>
 
         <Block heading="The language model">
@@ -136,7 +176,7 @@ export default function PrivacyPage() {
         </Block>
 
         <p className="font-sans text-[12px] text-ink-dimmed pt-6">
-          Last updated 2026-05-26.
+          Last updated 2026-05-29.
         </p>
       </section>
 

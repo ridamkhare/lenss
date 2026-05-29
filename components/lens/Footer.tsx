@@ -12,6 +12,27 @@ export function Footer() {
         >
           archive
         </Link>
+        <span className="mx-2 text-divider">·</span>
+        <Link
+          href="/terms"
+          className="hover:text-ink transition-colors duration-200"
+        >
+          terms
+        </Link>
+        <span className="mx-2 text-divider">·</span>
+        <Link
+          href="/privacy"
+          className="hover:text-ink transition-colors duration-200"
+        >
+          privacy
+        </Link>
+        <span className="mx-2 text-divider">·</span>
+        <Link
+          href="/refunds"
+          className="hover:text-ink transition-colors duration-200"
+        >
+          refunds
+        </Link>
         {CWS_URL && (
           <>
             <span className="mx-2 text-divider">·</span>
