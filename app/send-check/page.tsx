@@ -374,20 +374,16 @@ function HeaderRight({ me }: { me: MeResponse | null }) {
   // signed-in users whose me hasn't resolved yet)
   if (!me) return null
 
-  // Anon: prominent "sign up — free" link in the header.
+  // Anon: prominent "sign up — free" button in the header.
   if (me.plan === "anon") {
     return (
-      <Link
-        href="#signup"
-        scroll={false}
-        onClick={(e) => {
-          e.preventDefault()
-          window.dispatchEvent(new CustomEvent("lenss-show-signup"))
-        }}
+      <button
+        type="button"
+        onClick={() => window.dispatchEvent(new CustomEvent("lenss-show-signup"))}
         className="font-sans text-[12px] tracking-[0.04em] lowercase text-ink hover:text-ink-dimmed transition-colors duration-200"
       >
         sign up — free →
-      </Link>
+      </button>
     )
   }
 
