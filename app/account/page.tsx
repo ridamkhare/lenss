@@ -225,6 +225,18 @@ function AccountInner() {
             </p>
           </section>
 
+          <section>
+            <p className="font-sans text-[11px] font-medium uppercase tracking-label text-ink-dimmed mb-3">
+              history
+            </p>
+            <Link
+              href="/history"
+              className="font-serif text-[16px] text-ink underline decoration-divider underline-offset-2 hover:text-ink-dimmed transition-colors"
+            >
+              See your past draft checks →
+            </Link>
+          </section>
+
           <section className="pt-4 border-t border-divider">
             <PlanActions
               me={me}
