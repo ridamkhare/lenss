@@ -254,18 +254,22 @@ function SendCheckInner() {
 
       {status === "rate_limited" && rateLimitKind === "daily_cap_reached" && (
         <div className="mt-12 animate-reveal">
-          <p className="font-serif italic text-[16px] leading-[1.55] text-ink-dimmed mb-4">
+          <p className="font-serif italic text-[16px] leading-[1.55] text-ink-dimmed mb-5">
             {message}
           </p>
           {!isPro && (
-            <p className="font-serif text-[14px] text-ink-dimmed">
-              Pro is $19/mo — unlimited reveals. Coming soon.
-            </p>
+            <Link
+              href="/account"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-ink text-paper font-sans text-[14px] font-medium rounded-md hover:bg-ink/85 transition-colors duration-200"
+            >
+              Upgrade to Pro — $19/mo
+              <span aria-hidden>→</span>
+            </Link>
           )}
           <button
             type="button"
             onClick={handleReset}
-            className="mt-4 font-sans text-[12px] text-ink-dimmed hover:text-ink transition-colors duration-200"
+            className="block mt-5 font-sans text-[12px] text-ink-dimmed hover:text-ink transition-colors duration-200"
           >
             ← start over
           </button>
@@ -317,50 +321,44 @@ function SendCheckInner() {
 function PlanBadge({ me }: { me: MeResponse | null }) {
   if (!me || me.plan === "anon") return null
 
+  const className =
+    "inline-flex items-center gap-2 font-sans text-[12px] tracking-[0.04em] lowercase text-ink-dimmed hover:text-ink transition-colors duration-200"
+
   if (me.plan === "trial") {
     const daysLeft = me.trial_ends_at
       ? Math.max(0, Math.ceil((new Date(me.trial_ends_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
       : 14
     return (
-      <span className="inline-flex items-center gap-2 font-sans text-[12px] tracking-[0.04em] lowercase text-ink-dimmed">
-        <span
-          aria-hidden
-          className="inline-block h-1.5 w-1.5 rounded-full bg-[#efd356]"
-        />
+      <Link href="/account" className={className}>
+        <span aria-hidden className="inline-block h-1.5 w-1.5 rounded-full bg-[#efd356]" />
         pro · {daysLeft} {daysLeft === 1 ? "day" : "days"} left in trial
-      </span>
+      </Link>
     )
   }
 
   if (me.plan === "active") {
     return (
-      <span className="inline-flex items-center gap-2 font-sans text-[12px] tracking-[0.04em] lowercase text-ink-dimmed">
-        <span
-          aria-hidden
-          className="inline-block h-1.5 w-1.5 rounded-full bg-[#efd356]"
-        />
+      <Link href="/account" className={className}>
+        <span aria-hidden className="inline-block h-1.5 w-1.5 rounded-full bg-[#efd356]" />
         pro
-      </span>
+      </Link>
     )
   }
 
   if (me.plan === "lapsed") {
     return (
-      <span className="inline-flex items-center gap-2 font-sans text-[12px] tracking-[0.04em] lowercase text-ink-dimmed">
-        <span
-          aria-hidden
-          className="inline-block h-1.5 w-1.5 rounded-full bg-red-500"
-        />
+      <Link href="/account" className={className}>
+        <span aria-hidden className="inline-block h-1.5 w-1.5 rounded-full bg-red-500" />
         pro · payment failed
-      </span>
+      </Link>
     )
   }
 
   // free
   return (
-    <span className="inline-flex items-center gap-2 font-sans text-[12px] tracking-[0.04em] lowercase text-ink-dimmed">
+    <Link href="/account" className={className}>
       free
-    </span>
+    </Link>
   )
 }
 
