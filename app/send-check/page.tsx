@@ -288,6 +288,10 @@ function SendCheckInner() {
         </p>
       )}
 
+      {me?.plan === "free" && status === "empty" && (
+        <FreeUpgradeHint trialEndsAt={me.trial_ends_at ?? null} />
+      )}
+
       {isAnon && showSignup && (
         <div ref={signupCtaRef}>
           <SendCheckSignupCta reason="Sign up free to unlock 5 reveals every day, save up to 3 recipient profiles, and keep your last 10 checks in history." />
@@ -454,6 +458,40 @@ function PlanBadge({ me }: { me: MeResponse | null }) {
 
   // Unknown plan — render nothing rather than guessing
   return null
+}
+
+function FreeUpgradeHint({ trialEndsAt }: { trialEndsAt: string | null }) {
+  const trialEnds = trialEndsAt ? new Date(trialEndsAt) : null
+  const trialInFuture = trialEnds ? trialEnds.getTime() > Date.now() : false
+  const daysLeft = trialEnds
+    ? Math.max(0, Math.ceil((trialEnds.getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+    : 0
+
+  // Three states:
+  //   - never started trial   → offer 10-day free trial
+  //   - trial paused (future) → offer to resume
+  //   - trial expired         → offer paid upgrade only
+  let label: string
+  let href = "/account"
+  if (!trialEnds) {
+    label = "Try Pro free for 10 days →"
+  } else if (trialInFuture) {
+    label = `Resume Pro — ${daysLeft} ${daysLeft === 1 ? "day" : "days"} free left →`
+  } else {
+    label = "Upgrade to Pro — $19/mo →"
+  }
+
+  return (
+    <p className="mt-6 font-sans text-[12px] text-ink-dimmed/80 leading-[1.55]">
+      Want more reveals, more recipients, more personas?{" "}
+      <Link
+        href={href}
+        className="underline decoration-divider underline-offset-2 hover:text-ink transition-colors"
+      >
+        {label}
+      </Link>
+    </p>
+  )
 }
 
 function PlanFootnote({
