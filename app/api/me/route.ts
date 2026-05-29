@@ -18,6 +18,15 @@ export const runtime = "nodejs"
 
 const ANON_DAILY_CAP = 3
 const FREE_DAILY_REVEALS = 5
+
+// /api/me must never be cached — its answer depends on the user's session
+// token + their current usage, which changes per-request. Browser caches
+// or service workers serving stale "free" responses to a newly-anon user
+// (or vice versa) is the entire failure mode we're guarding against.
+const NO_CACHE_HEADERS = {
+  "Cache-Control": "no-store, no-cache, must-revalidate, private",
+  Pragma: "no-cache",
+} as const
 const FREE_PERSONA_CAP = 3
 const FREE_HISTORY_CAP = 10
 const PRO_DAILY_REVEALS = 50
@@ -81,16 +90,19 @@ export async function GET(req: NextRequest) {
     } catch {
       /* anon counter is best-effort */
     }
-    return NextResponse.json({
-      plan: "anon",
-      reveals_today: revealsToday,
-      caps: {
-        daily_reveals: ANON_DAILY_CAP,
-        personas: 0,
-        history: 0,
-        max_recipients_per_check: 3, // anon + free both get up to 3 recipients
+    return NextResponse.json(
+      {
+        plan: "anon",
+        reveals_today: revealsToday,
+        caps: {
+          daily_reveals: ANON_DAILY_CAP,
+          personas: 0,
+          history: 0,
+          max_recipients_per_check: 3, // anon + free both get up to 3 recipients
+        },
       },
-    })
+      { headers: NO_CACHE_HEADERS }
+    )
   }
 
   const dayStart = startOfTodayUtc()
@@ -135,16 +147,19 @@ export async function GET(req: NextRequest) {
         max_recipients_per_check: 3, // free caps at 3 — Pro is the differentiator
       }
 
-  return NextResponse.json({
-    plan: user.plan,
-    email: user.email,
-    trial_ends_at:
-      user.plan === "trial" && user.trialEndsAt
-        ? user.trialEndsAt.toISOString()
-        : null,
-    reveals_today: revealsToday,
-    personas_count: personasCount,
-    history_count: historyCount,
-    caps,
-  })
+  return NextResponse.json(
+    {
+      plan: user.plan,
+      email: user.email,
+      trial_ends_at:
+        user.plan === "trial" && user.trialEndsAt
+          ? user.trialEndsAt.toISOString()
+          : null,
+      reveals_today: revealsToday,
+      personas_count: personasCount,
+      history_count: historyCount,
+      caps,
+    },
+    { headers: NO_CACHE_HEADERS }
+  )
 }

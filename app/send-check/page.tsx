@@ -92,8 +92,9 @@ function SendCheckInner() {
       try { return localStorage.getItem(TOKEN_STORAGE_KEY) } catch { return null }
     })()
 
-    fetch("/api/me", {
+    fetch(`/api/me?_=${Date.now()}`, {
       headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      cache: "no-store",
     })
       .then((r) => r.json())
       .then((data: MeResponse) => setMe(data))
