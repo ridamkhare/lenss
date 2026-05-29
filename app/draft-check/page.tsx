@@ -187,7 +187,7 @@ export default function DraftCheckLanding() {
               pro
             </p>
             <p className="font-serif text-[24px] text-ink mb-4">
-              $19<span className="text-ink-dimmed text-[16px]"> / month</span>
+              ₹1599<span className="text-ink-dimmed text-[16px]"> / month</span>
             </p>
             <ul className="font-serif text-[14px] leading-[1.6] text-ink-dimmed space-y-1.5">
               <li>50 reveals every day (effectively unlimited)</li>

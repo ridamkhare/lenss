@@ -68,6 +68,11 @@ export const users = pgTable(
     stripeSubscriptionId: text("stripe_subscription_id"),
     stripeSubscriptionStatus: text("stripe_subscription_status"),
 
+    // Razorpay (India-friendly alternative; selected via PAYMENT_PROVIDER env)
+    razorpayCustomerId: text("razorpay_customer_id"),
+    razorpaySubscriptionId: text("razorpay_subscription_id"),
+    razorpaySubscriptionStatus: text("razorpay_subscription_status"),
+
     // Activity
     lastActiveAt: timestamp("last_active_at", { withTimezone: true }),
   },

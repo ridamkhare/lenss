@@ -348,7 +348,7 @@ function SendCheckInner() {
               href="/account"
               className="inline-flex items-center gap-2 px-6 py-3 bg-ink text-paper font-sans text-[14px] font-medium rounded-md hover:bg-ink/85 transition-colors duration-200"
             >
-              Upgrade to Pro — $19/mo
+              Upgrade to Pro — ₹1599/mo
               <span aria-hidden>→</span>
             </Link>
           )}
@@ -503,7 +503,7 @@ function FreeUpgradeHint({ trialEndsAt }: { trialEndsAt: string | null }) {
   const trialEnds = trialEndsAt ? new Date(trialEndsAt) : null
   const trialExpired = trialEnds ? trialEnds.getTime() <= Date.now() : false
   const label = trialExpired
-    ? "Upgrade to Pro — $19/mo →"
+    ? "Upgrade to Pro — ₹1599/mo →"
     : "Try Pro free for 10 days →"
 
   return (
@@ -550,7 +550,7 @@ function PlanFootnote({
   if (me.plan === "active") {
     return (
       <p className="mt-4 font-sans text-[11px] text-ink-dimmed">
-        {me.reveals_today ?? 0} reveals today. Pro — $19/mo.
+        {me.reveals_today ?? 0} reveals today. Pro — ₹1599/mo.
       </p>
     )
   }
