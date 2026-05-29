@@ -411,14 +411,17 @@ function PlanBadge({ me }: { me: MeResponse | null }) {
   const className =
     "inline-flex items-center gap-2 font-sans text-[12px] tracking-[0.04em] lowercase text-ink-dimmed hover:text-ink transition-colors duration-200"
 
+  // Trial and active both render as "pro" — trial is just Pro you
+  // haven't paid for yet, not a separate tier. The trial countdown is
+  // shown as a quiet suffix so it doesn't feel like its own thing.
   if (me.plan === "trial") {
     const daysLeft = me.trial_ends_at
       ? Math.max(0, Math.ceil((new Date(me.trial_ends_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
-      : 14
+      : 10
     return (
       <Link href="/account" className={className}>
         <span aria-hidden className="inline-block h-1.5 w-1.5 rounded-full bg-[#efd356]" />
-        pro · {daysLeft} {daysLeft === 1 ? "day" : "days"} left in trial
+        pro · {daysLeft} {daysLeft === 1 ? "day" : "days"} free
       </Link>
     )
   }
@@ -436,7 +439,7 @@ function PlanBadge({ me }: { me: MeResponse | null }) {
     return (
       <Link href="/account" className={className}>
         <span aria-hidden className="inline-block h-1.5 w-1.5 rounded-full bg-red-500" />
-        pro · payment failed
+        pro · payment issue
       </Link>
     )
   }
@@ -468,7 +471,7 @@ function PlanFootnote({
     ))
     return (
       <p className="mt-4 font-sans text-[11px] text-ink-dimmed">
-        {daysLeft} {daysLeft === 1 ? "day" : "days"} left in trial. {me.reveals_today ?? 0} of {me.caps?.daily_reveals ?? 50} reveals today.
+        {me.reveals_today ?? 0} of {me.caps?.daily_reveals ?? 50} reveals today. {daysLeft} {daysLeft === 1 ? "day" : "days"} free remaining — no charge until then.
       </p>
     )
   }

@@ -296,7 +296,7 @@ function PlanActions({
       {me.plan === "free" && trialInFuture && (
         <>
           <button type="button" onClick={onStartTrial} disabled={loading} className={primary}>
-            {loading ? "Resuming…" : `Resume Pro trial — ${daysLeft} ${daysLeft === 1 ? "day" : "days"} left`}
+            {loading ? "Resuming…" : `Resume Pro — ${daysLeft} ${daysLeft === 1 ? "day" : "days"} free left`}
           </button>
           <button type="button" onClick={onUpgrade} disabled={loading} className={secondary}>
             Or upgrade to Pro — $19/mo
@@ -354,7 +354,7 @@ function PlanLine({ me }: { me: MeResponse }) {
   if (me.plan === "trial" && trialInFuture) {
     return (
       <p className="font-serif text-[17px] text-ink">
-        Pro trial · <span className="text-ink-dimmed">{daysLeft} {daysLeft === 1 ? "day" : "days"} left</span>
+        Pro · <span className="text-ink-dimmed">{daysLeft} {daysLeft === 1 ? "day" : "days"} free remaining, no charge yet</span>
       </p>
     )
   }
@@ -364,7 +364,7 @@ function PlanLine({ me }: { me: MeResponse }) {
   if (me.plan === "lapsed") {
     return (
       <p className="font-serif text-[17px] text-ink">
-        Pro · <span className="text-ink-dimmed">payment failed</span>
+        Pro · <span className="text-ink-dimmed">payment issue</span>
       </p>
     )
   }
@@ -372,7 +372,7 @@ function PlanLine({ me }: { me: MeResponse }) {
   if (trialInFuture) {
     return (
       <p className="font-serif text-[17px] text-ink">
-        Free · <span className="text-ink-dimmed">Pro trial paused — {daysLeft} {daysLeft === 1 ? "day" : "days"} left to resume</span>
+        Free · <span className="text-ink-dimmed">Pro paused — {daysLeft} {daysLeft === 1 ? "day" : "days"} free left to resume</span>
       </p>
     )
   }
