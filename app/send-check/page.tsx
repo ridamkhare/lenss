@@ -270,6 +270,7 @@ function SendCheckInner() {
         onSubmit={handleSubmit}
         busy={busy}
         maxRecipients={me?.caps?.max_recipients_per_check ?? 4}
+        signedIn={!!me && me.plan !== "anon"}
       />
 
       <PlanFootnote me={me} busy={busy} />
