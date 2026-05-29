@@ -115,7 +115,7 @@ export async function POST(req: NextRequest) {
             emit({
               type: "rate_limited",
               kind: "anon_used",
-              reason: `You've used today's ${gateResult.capDaily} free reveals. Sign up free to unlock 5 reveals every day, multi-recipient simulation, saved personas, and full history.`,
+              reason: `You've used today's ${gateResult.capDaily} free reveals. Sign up free to unlock 5 every day, plus saved personas and full history.`,
             })
           } else if (gateResult.reason === "daily_cap_reached") {
             const isPro = gateResult.plan === "trial" || gateResult.plan === "active"
@@ -135,14 +135,16 @@ export async function POST(req: NextRequest) {
           return
         }
 
-        // Anon users can only do single-recipient checks. Multi-recipient is
-        // a signup-gated feature — gives free users a real reason to sign up
-        // beyond just "more reveals."
-        if (gateResult.mode === "anon" && recipients.length > 1) {
+        // Recipient cap by tier: anon + free → 3, pro (trial or active) → 4
+        const isProTier =
+          gateResult.mode === "user" &&
+          (gateResult.user.plan === "trial" || gateResult.user.plan === "active")
+        const maxRecipients = isProTier ? 4 : 3
+        if (recipients.length > maxRecipients) {
           emit({
             type: "rate_limited",
             kind: "anon_used",
-            reason: "Multi-recipient simulation is a signed-up feature. Sign up free to read your email against up to 4 different recipients at once.",
+            reason: `Up to ${maxRecipients} recipients per check on your plan. Pro reads against 4 at once.`,
           })
           return
         }

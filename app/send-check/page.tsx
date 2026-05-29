@@ -65,6 +65,7 @@ function SendCheckInner() {
   const [meta, setMeta] = useState<MetaSynthesis | null>(null)
   const [message, setMessage] = useState<string>("")
   const [rateLimitKind, setRateLimitKind] = useState<RateLimitKind | null>(null)
+  const [showSignup, setShowSignup] = useState(false)
 
   // On mount: capture activation token from URL (set by /api/auth/activate
   // redirect), persist to localStorage, strip from URL. Then fetch /api/me.
@@ -97,6 +98,11 @@ function SendCheckInner() {
       .then((r) => r.json())
       .then((data: MeResponse) => setMe(data))
       .catch(() => setMe({ plan: "anon" }))
+
+    // Header signup link dispatches this event; reveal the inline CTA.
+    const onShowSignup = () => setShowSignup(true)
+    window.addEventListener("lenss-show-signup", onShowSignup)
+    return () => window.removeEventListener("lenss-show-signup", onShowSignup)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -218,7 +224,7 @@ function SendCheckInner() {
         >
           lenss
         </Link>
-        <PlanBadge me={me} />
+        <HeaderRight me={me} />
       </header>
 
       {activationError && (
@@ -252,8 +258,20 @@ function SendCheckInner() {
 
       {isAnon && status === "empty" && (
         <p className="mt-6 font-sans text-[12px] text-ink-dimmed/80 leading-[1.55]">
-          You have {Math.max(0, 3 - (me?.reveals_today ?? 0))} of 3 free reveals today, single recipient. Sign up free to unlock 5/day, multi-recipient simulation, saved personas, and history.
+          You have {Math.max(0, 3 - (me?.reveals_today ?? 0))} of 3 free reveals today.{" "}
+          <button
+            type="button"
+            onClick={() => setShowSignup(true)}
+            className="underline decoration-divider underline-offset-2 hover:text-ink transition-colors"
+          >
+            Sign up free
+          </button>
+          {" "}for 5/day, saved personas, and history.
         </p>
+      )}
+
+      {isAnon && showSignup && (
+        <SendCheckSignupCta reason="Sign up free to unlock 5 reveals every day, save up to 3 recipient profiles, and keep your last 10 checks in history." />
       )}
 
       <SendCheckResults
@@ -337,6 +355,28 @@ function SendCheckInner() {
       <Footer />
     </main>
   )
+}
+
+function HeaderRight({ me }: { me: MeResponse | null }) {
+  // Anon: prominent "sign up — free" link in the header.
+  // Signed-in: plan badge linking to /account.
+  if (!me || me.plan === "anon") {
+    return (
+      <Link
+        href="#signup"
+        scroll={false}
+        onClick={(e) => {
+          e.preventDefault()
+          // Trigger inline signup CTA via a custom event the page listens for.
+          window.dispatchEvent(new CustomEvent("lenss-show-signup"))
+        }}
+        className="font-sans text-[12px] tracking-[0.04em] lowercase text-ink hover:text-ink-dimmed transition-colors duration-200"
+      >
+        sign up — free →
+      </Link>
+    )
+  }
+  return <PlanBadge me={me} />
 }
 
 function PlanBadge({ me }: { me: MeResponse | null }) {

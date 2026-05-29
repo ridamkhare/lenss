@@ -90,7 +90,7 @@ export default function DraftCheckLanding() {
         </Link>
         <p className="mt-3 font-sans text-[12px] text-ink-dimmed">
           No signup needed for the first try. Sign up free for 5/day plus
-          multi-recipient simulation, saved personas, and history.
+          saved personas and history.
         </p>
       </div>
 
@@ -173,8 +173,8 @@ export default function DraftCheckLanding() {
             <p className="font-serif text-[24px] text-ink mb-4">$0</p>
             <ul className="font-serif text-[14px] leading-[1.6] text-ink-dimmed space-y-1.5">
               <li>5 reveals every day</li>
-              <li>Multi-recipient simulation</li>
-              <li>Save up to 3 personas</li>
+              <li>Read against up to 3 recipients at once</li>
+              <li>Save up to 3 recipient profiles</li>
               <li>Last 10 checks in history</li>
             </ul>
             <p className="mt-4 font-sans text-[11px] text-ink-dimmed/70">
@@ -191,8 +191,8 @@ export default function DraftCheckLanding() {
             </p>
             <ul className="font-serif text-[14px] leading-[1.6] text-ink-dimmed space-y-1.5">
               <li>50 reveals every day (effectively unlimited)</li>
-              <li>Multi-recipient simulation</li>
-              <li>Save up to 30 personas</li>
+              <li>Read against up to 4 recipients at once</li>
+              <li>Save up to 30 recipient profiles</li>
               <li>Last 200 checks in history</li>
             </ul>
             <p className="mt-4 font-sans text-[11px] text-ink-dimmed/70">

@@ -88,7 +88,7 @@ export async function GET(req: NextRequest) {
         daily_reveals: ANON_DAILY_CAP,
         personas: 0,
         history: 0,
-        max_recipients_per_check: 1, // anon = single-recipient only
+        max_recipients_per_check: 3, // anon + free both get up to 3 recipients
       },
     })
   }
@@ -126,13 +126,13 @@ export async function GET(req: NextRequest) {
         daily_reveals: PRO_DAILY_REVEALS,
         personas: PRO_PERSONA_CAP,
         history: PRO_HISTORY_CAP,
-        max_recipients_per_check: 4,
+        max_recipients_per_check: 4, // pro gets one more recipient than free
       }
     : {
         daily_reveals: FREE_DAILY_REVEALS,
         personas: FREE_PERSONA_CAP,
         history: FREE_HISTORY_CAP,
-        max_recipients_per_check: 4,
+        max_recipients_per_check: 3, // free caps at 3 — Pro is the differentiator
       }
 
   return NextResponse.json({
