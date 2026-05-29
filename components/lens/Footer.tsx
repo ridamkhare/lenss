@@ -33,6 +33,13 @@ export function Footer() {
         >
           refunds
         </Link>
+        <span className="mx-2 text-divider">·</span>
+        <a
+          href="mailto:hello@lenss.one"
+          className="hover:text-ink transition-colors duration-200"
+        >
+          hello@lenss.one
+        </a>
         {CWS_URL && (
           <>
             <span className="mx-2 text-divider">·</span>
