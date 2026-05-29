@@ -18,8 +18,13 @@ const ALLOWED_ORIGINS = new Set([
 ])
 
 if (process.env.NODE_ENV !== "production") {
-  ALLOWED_ORIGINS.add("http://localhost:3000")
-  ALLOWED_ORIGINS.add("http://127.0.0.1:3000")
+  // Allow any localhost port in dev — Next.js auto-picks alternate ports
+  // when 3000 is taken (3001, 3002, etc.). Hard-coding 3000 broke this for
+  // anyone whose dev server ended up on a fallback port.
+  for (let p = 3000; p <= 3010; p++) {
+    ALLOWED_ORIGINS.add(`http://localhost:${p}`)
+    ALLOWED_ORIGINS.add(`http://127.0.0.1:${p}`)
+  }
 }
 
 const MAX_PAYLOAD_BYTES = 50 * 1024

@@ -96,8 +96,19 @@ function SendCheckInner() {
       headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       cache: "no-store",
     })
-      .then((r) => r.json())
-      .then((data: MeResponse) => setMe(data))
+      .then(async (r) => {
+        if (!r.ok) throw new Error(`me failed: ${r.status}`)
+        return (await r.json()) as MeResponse
+      })
+      .then((data) => {
+        // Defend against malformed/missing plan field — fall back to anon
+        // rather than silently rendering free.
+        if (!data || typeof data.plan !== "string") {
+          setMe({ plan: "anon" })
+        } else {
+          setMe(data)
+        }
+      })
       .catch(() => setMe({ plan: "anon" }))
 
     // Header signup link dispatches this event; reveal the inline CTA.
@@ -420,12 +431,16 @@ function PlanBadge({ me }: { me: MeResponse | null }) {
     )
   }
 
-  // free
-  return (
-    <Link href="/account" className={className}>
-      free
-    </Link>
-  )
+  if (me.plan === "free") {
+    return (
+      <Link href="/account" className={className}>
+        free
+      </Link>
+    )
+  }
+
+  // Unknown plan — render nothing rather than guessing
+  return null
 }
 
 function PlanFootnote({
