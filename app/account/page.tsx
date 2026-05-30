@@ -66,8 +66,15 @@ function AccountInner() {
       return
     }
     fetch("/api/me", { headers: { Authorization: `Bearer ${token}` } })
-      .then((r) => r.json())
-      .then((data: MeResponse) => setMe(data))
+      .then(async (r) => {
+        // /api/me returns 401 when the stored token doesn't match the DB
+        // (e.g. after a fresh Google OAuth sign-in invalidated this device's
+        // older magic-link token). Falling back to anon here renders the
+        // "signed out" header instead of a broken Free/0-of-0/no-buttons page.
+        if (!r.ok) return { plan: "anon" } as MeResponse
+        return (await r.json()) as MeResponse
+      })
+      .then((data) => setMe(data))
       .catch(() => setMe({ plan: "anon" }))
       .finally(() => setLoading(false))
   }, [])
