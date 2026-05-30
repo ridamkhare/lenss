@@ -211,12 +211,20 @@ function AccountInner() {
         >
           lenss
         </Link>
-        <Link
-          href="/send-check"
-          className="font-sans text-[12px] tracking-[0.04em] lowercase text-ink-dimmed hover:text-ink transition-colors duration-200"
-        >
-          ← draft check
-        </Link>
+        <nav className="flex items-center gap-5">
+          <Link
+            href="/send-check"
+            className="font-sans text-[12px] tracking-[0.04em] lowercase text-ink-dimmed hover:text-ink transition-colors duration-200"
+          >
+            draft check
+          </Link>
+          <Link
+            href="/history"
+            className="font-sans text-[12px] tracking-[0.04em] lowercase text-ink-dimmed hover:text-ink transition-colors duration-200"
+          >
+            history
+          </Link>
+        </nav>
       </header>
 
       <p className="font-sans text-[11px] font-medium uppercase tracking-label text-ink-dimmed mb-3">

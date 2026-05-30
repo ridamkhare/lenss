@@ -434,7 +434,8 @@ function HeaderRight({
     )
   }
 
-  // Signed-in: history link + plan badge.
+  // Signed-in: section nav (history + account) + plan badge. Plan badge
+  // links to /account too — kept for at-a-glance plan visibility.
   return (
     <div className="flex items-center gap-5">
       <Link
@@ -442,6 +443,12 @@ function HeaderRight({
         className="font-sans text-[12px] tracking-[0.04em] lowercase text-ink-dimmed hover:text-ink transition-colors duration-200"
       >
         history
+      </Link>
+      <Link
+        href="/account"
+        className="font-sans text-[12px] tracking-[0.04em] lowercase text-ink-dimmed hover:text-ink transition-colors duration-200"
+      >
+        account
       </Link>
       <PlanBadge me={me} />
     </div>
