@@ -285,14 +285,18 @@ function SendCheckInner() {
         draft check
       </p>
       <h1 className="font-serif text-[26px] sm:text-[32px] leading-[1.3] text-ink mb-6">
-        Before your email lands, see what it&rsquo;s doing to the reader.
+        See what your email actually says.
       </h1>
-      <p className="font-serif text-[17px] leading-[1.6] text-ink-dimmed mb-14">
-        Paste the message you&rsquo;re about to send and name who&rsquo;s
-        reading it. Lenss reads it the way each of them will — the pressure,
-        the positioning, the unspoken pull — before they do. No rewriting.
-        Just the reading.
+      <p className="font-serif text-[17px] leading-[1.6] text-ink-dimmed mb-8">
+        Paste any draft below. Lenss reads it the way your reader will — before you hit send.
       </p>
+
+      {isAnon && status === "empty" && (
+        <p className="mb-10 font-sans text-[13px] text-ink-dimmed leading-[1.55]">
+          <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#efd356] mr-2 align-middle" />
+          {Math.max(0, 3 - (me?.reveals_today ?? 0))} of 3 free reveals today &mdash; no signup needed.
+        </p>
+      )}
 
       <SendCheckForm
         onSubmit={handleSubmit}
@@ -305,7 +309,6 @@ function SendCheckInner() {
 
       {isAnon && status === "empty" && (
         <p className="mt-6 font-sans text-[12px] text-ink-dimmed/80 leading-[1.55]">
-          You have {Math.max(0, 3 - (me?.reveals_today ?? 0))} of 3 free reveals today.{" "}
           <button
             type="button"
             onClick={openSignup}

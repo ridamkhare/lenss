@@ -231,13 +231,13 @@ export function SendCheckForm({
     <form onSubmit={handleSubmit} className="space-y-8">
       <div>
         <label className="block font-sans text-[11px] font-medium uppercase tracking-label text-ink-dimmed mb-3">
-          subject
+          subject <span className="text-ink-dimmed/60 normal-case tracking-normal">(optional)</span>
         </label>
         <input
           type="text"
           value={subject}
           onChange={(e) => setSubject(e.target.value)}
-          placeholder="What you'd put in the subject line."
+          placeholder="Optional. Skip this if you want."
           disabled={busy}
           maxLength={200}
           data-clarity-mask="True"

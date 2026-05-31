@@ -1,6 +1,12 @@
-import type { Metadata } from "next"
+import type { Metadata, Viewport } from "next"
 import { Newsreader, Inter } from "next/font/google"
 import Script from "next/script"
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+}
 import { GoogleAnalytics } from "@next/third-parties/google"
 import "./globals.css"
 
