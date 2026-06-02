@@ -42,7 +42,7 @@ export default function ExtensionPage() {
             href={CWS_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-6 py-3 bg-ink text-bg font-sans text-[14px] font-medium rounded hover:bg-ink-dimmed transition-colors duration-200"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-ink text-paper font-sans text-[14px] font-medium rounded-md hover:bg-ink/85 transition-colors duration-200"
           >
             Add to Chrome
             <span aria-hidden>→</span>
