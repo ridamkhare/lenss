@@ -408,10 +408,19 @@ function SendCheckInner() {
         <div className="mt-12 animate-reveal">
           <button
             type="button"
-            onClick={handleReset}
-            className="font-sans text-[12px] text-ink-dimmed hover:text-ink transition-colors duration-200"
+            onClick={() => {
+              handleReset()
+              // Scroll the form back into view — otherwise users hit "check
+              // another draft" and stay parked at the bottom of the result,
+              // not realising the form above is now ready for new input.
+              requestAnimationFrame(() => {
+                window.scrollTo({ top: 0, behavior: "smooth" })
+              })
+            }}
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-md border border-divider text-ink font-sans text-[13px] font-medium hover:border-ink-dimmed hover:text-ink transition-colors duration-200"
           >
-            check another draft
+            <span aria-hidden>↻</span>
+            Check another draft
           </button>
         </div>
       )}
