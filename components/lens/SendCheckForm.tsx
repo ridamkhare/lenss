@@ -38,6 +38,16 @@ function normalizeArchetype(raw: string): string | null {
   return ARCHETYPE_RE.test(trimmed) ? trimmed : null
 }
 
+// One-line "what's blocking the Check button" hint that mirrors the canSubmit
+// gate. Surfaced only when the user has started typing — empty form stays
+// quiet so we don't scold a blank slate.
+function disabledReason(subject: string, body: string, recipients: number): string {
+  if (subject.trim().length < 3) return "Add a subject line (it shapes the reading)."
+  if (body.trim().length < 30) return "Paste a longer draft — at least a couple of sentences."
+  if (recipients < 1) return "Pick at least one recipient."
+  return ""
+}
+
 export function SendCheckForm({
   onSubmit,
   busy,
@@ -230,32 +240,38 @@ export function SendCheckForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-8">
       <div>
-        <label className="block font-sans text-[11px] font-medium uppercase tracking-label text-ink-dimmed mb-3">
-          subject <span className="text-ink-dimmed/60 normal-case tracking-normal">(optional)</span>
+        <label htmlFor="sc-subject" className="block font-sans text-[11px] font-medium uppercase tracking-label text-ink-dimmed mb-3">
+          subject
         </label>
         <input
+          id="sc-subject"
           type="text"
           value={subject}
           onChange={(e) => setSubject(e.target.value)}
-          placeholder="Optional. Skip this if you want."
+          placeholder="The subject line your recipient will see."
           disabled={busy}
           maxLength={200}
+          required
+          minLength={3}
           data-clarity-mask="True"
           className="w-full rounded-md border border-divider bg-paper px-6 py-4 font-serif text-[17px] leading-[1.4] text-ink placeholder:text-ink-dimmed/70 transition-colors duration-200 focus:border-accent/50 focus:outline-none focus:ring-2 focus:ring-accent/15 disabled:opacity-60"
         />
       </div>
 
       <div>
-        <label className="block font-sans text-[11px] font-medium uppercase tracking-label text-ink-dimmed mb-3">
+        <label htmlFor="sc-body" className="block font-sans text-[11px] font-medium uppercase tracking-label text-ink-dimmed mb-3">
           body
         </label>
         <Textarea
+          id="sc-body"
           value={body}
           onChange={(e) => setBody(e.target.value)}
           placeholder="Paste the email you're about to send."
           disabled={busy}
           rows={10}
           maxLength={4000}
+          required
+          minLength={30}
         />
       </div>
 
@@ -485,10 +501,19 @@ export function SendCheckForm({
         <span className="font-sans text-[12px] text-ink-dimmed">
           {busy ? "Reading…" : `${selected.length} of ${MAX_RECIPIENTS} recipients picked`}
         </span>
-        <Button type="submit" disabled={!canSubmit}>
+        <Button
+          type="submit"
+          disabled={!canSubmit}
+          aria-describedby={!busy && !canSubmit ? "sc-check-hint" : undefined}
+        >
           {busy ? "Reading" : "Check"}
         </Button>
       </div>
+      {!busy && !canSubmit && (subject.trim().length > 0 || body.trim().length > 0 || selected.length > 0) && (
+        <p id="sc-check-hint" className="font-sans text-[12px] text-ink-dimmed italic -mt-4">
+          {disabledReason(subject, body, selected.length)}
+        </p>
+      )}
     </form>
   )
 }
