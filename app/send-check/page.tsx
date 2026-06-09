@@ -309,7 +309,7 @@ function SendCheckInner() {
       {isAnon && status === "empty" && (
         <p className="mb-10 font-sans text-[13px] text-ink-dimmed leading-[1.55]">
           <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#efd356] mr-2 align-middle" />
-          {Math.max(0, 3 - (me?.reveals_today ?? 0))} of 3 free reveals today &mdash; no signup needed.
+          {anonRevealsLeftCopy(me?.reveals_today ?? 0)}
         </p>
       )}
 
@@ -427,7 +427,7 @@ function SendCheckInner() {
 
       {status === "complete" && isAnon && (
         <p className="mt-6 font-sans text-[11px] text-ink-dimmed/80">
-          {Math.max(0, 3 - (me?.reveals_today ?? 0))} of 3 free reveals left today.
+          {anonRevealsLeftFootnote(me?.reveals_today ?? 0)}
         </p>
       )}
 
@@ -570,6 +570,25 @@ function FreeUpgradeHint({ trialEndsAt }: { trialEndsAt: string | null }) {
       </Link>
     </p>
   )
+}
+
+// Unambiguous "X reveals left" phrasing for the landing badge. The previous
+// "X of 3 free reveals today" pattern read ambiguously — was X used or X
+// remaining? — and read absurdly when remaining hit zero ("0 of 3 free
+// reveals today — no signup needed").
+function anonRevealsLeftCopy(used: number): string {
+  const left = Math.max(0, 3 - used)
+  if (left === 0) return "No free reveals left today — sign up for 5/day."
+  if (left === 1) return "1 free reveal left today — no signup needed."
+  return `${left} free reveals left today — no signup needed.`
+}
+
+// Result-page footnote variant. Same intent, terser, no signup-nudge tail.
+function anonRevealsLeftFootnote(used: number): string {
+  const left = Math.max(0, 3 - used)
+  if (left === 0) return "No free reveals left today."
+  if (left === 1) return "1 free reveal left today."
+  return `${left} free reveals left today.`
 }
 
 function limitReachedCopy(me: MeResponse | null): string {
