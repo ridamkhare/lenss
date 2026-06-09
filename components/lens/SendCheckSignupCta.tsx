@@ -51,7 +51,8 @@ export function SendCheckSignupCta({ reason }: { reason: string }) {
         </p>
         <p className="font-serif text-[16px] leading-[1.6] text-ink">
           A magic link is on its way to <span className="font-medium">{email}</span>.
-          Tap it on this device to activate Pro.
+          Tap it on this device to sign in — your account includes a 10-day Pro
+          trial, no card required.
         </p>
         <p className="font-serif text-[14px] text-ink-dimmed mt-3">
           Doesn&rsquo;t arrive in a few minutes? Check spam, or{" "}
