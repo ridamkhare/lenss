@@ -231,13 +231,18 @@ function SendCheckInner() {
             return
           } else if (event.type === "done") {
             setStatus("complete")
-            // Refresh /api/me to update reveals_today / history_count
-            if (token) {
-              fetch("/api/me", { headers: { Authorization: `Bearer ${token}` } })
-                .then((r) => r.json())
-                .then((data: MeResponse) => setMe(data))
-                .catch(() => {})
-            }
+            // Refresh /api/me to update reveals_today / history_count. Fire
+            // for anon too — the IP-based reveals_today counter changes after
+            // every successful reveal, and the post-result "X reveals left
+            // today" footnote reads from this. Skipping it for anon left the
+            // counter frozen at the initial value.
+            fetch(`/api/me?_=${Date.now()}`, {
+              headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+              cache: "no-store",
+            })
+              .then((r) => r.json())
+              .then((data: MeResponse) => setMe(data))
+              .catch(() => {})
             return
           }
         }
