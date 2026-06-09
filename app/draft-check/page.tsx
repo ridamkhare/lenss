@@ -5,6 +5,25 @@ export const metadata = {
   title: "Lenss Draft Check — see what your email is doing before you send",
   description:
     "Before you hit send, see what your message is doing to the reader. Multi-recipient simulation. No rewriting — just the reading.",
+  // Override the layout-level OG/Twitter metadata, which is written for the
+  // lenss.one AI-replies surface ("Paste an AI answer..."). On a shared link
+  // to this page that preview was simply wrong — different product. Same
+  // title/description as the page itself so the social preview matches what
+  // a clicker actually sees.
+  openGraph: {
+    title: "Lenss Draft Check — see what your email is doing before you send",
+    description:
+      "Before you hit send, see what your message is doing to the reader. Multi-recipient simulation. No rewriting — just the reading.",
+    url: "https://lenss.one/draft-check",
+    siteName: "lenss",
+    type: "website" as const,
+  },
+  twitter: {
+    card: "summary" as const,
+    title: "Lenss Draft Check — see what your email is doing before you send",
+    description:
+      "Before you hit send, see what your message is doing to the reader. Multi-recipient simulation. No rewriting — just the reading.",
+  },
 }
 
 const SAMPLES = [
