@@ -20,6 +20,15 @@ type Props = {
   maxRecipients?: number
   /** Signed-in users get the persona save/select sub-section. */
   signedIn?: boolean
+  /**
+   * True when the daily reveal cap has been reached for this user/IP. Disables
+   * the Check button and swaps the disabled-reason hint to point at signup or
+   * upgrade — otherwise the user can keep clicking a black, enabled-looking
+   * button that silently no-ops.
+   */
+  limitReached?: boolean
+  /** One-line copy shown under the Check button when limitReached is true. */
+  limitReachedReason?: string
 }
 
 const HARD_MAX_RECIPIENTS = 4
@@ -53,6 +62,8 @@ export function SendCheckForm({
   busy,
   maxRecipients = HARD_MAX_RECIPIENTS,
   signedIn = false,
+  limitReached = false,
+  limitReachedReason = "Out of free reveals for today. Sign up for more.",
 }: Props) {
   const MAX_RECIPIENTS = Math.min(maxRecipients, HARD_MAX_RECIPIENTS)
   const [subject, setSubject] = useState("")
@@ -223,6 +234,7 @@ export function SendCheckForm({
 
   const canSubmit =
     !busy &&
+    !limitReached &&
     subject.trim().length >= 3 &&
     body.trim().length >= 30 &&
     selected.length >= 1
@@ -509,9 +521,9 @@ export function SendCheckForm({
           {busy ? "Reading" : "Check"}
         </Button>
       </div>
-      {!busy && !canSubmit && (subject.trim().length > 0 || body.trim().length > 0 || selected.length > 0) && (
+      {!busy && !canSubmit && (limitReached || subject.trim().length > 0 || body.trim().length > 0 || selected.length > 0) && (
         <p id="sc-check-hint" className="font-sans text-[12px] text-ink-dimmed italic -mt-4">
-          {disabledReason(subject, body, selected.length)}
+          {limitReached ? limitReachedReason : disabledReason(subject, body, selected.length)}
         </p>
       )}
     </form>

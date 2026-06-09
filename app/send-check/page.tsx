@@ -265,6 +265,12 @@ function SendCheckInner() {
   const busy = status === "checking" || status === "streaming"
   const isAnon = !me || me.plan === "anon"
   const isPro = me?.plan === "trial" || me?.plan === "active"
+  // Disable Check when the user has nothing left today. /api/me carries both
+  // the count and the cap, so we don't have to hard-code per-tier limits here.
+  // Before this, the button stayed black and clickable after the limit was
+  // hit and silently no-op'd — users assumed the form was broken.
+  const dailyCap = me?.caps?.daily_reveals ?? (isAnon ? 3 : 5)
+  const limitReached = !!me && (me.reveals_today ?? 0) >= dailyCap
 
   return (
     <main className="mx-auto w-full max-w-reading px-6 sm:px-8 pt-20 sm:pt-28 pb-20">
@@ -308,6 +314,8 @@ function SendCheckInner() {
         busy={busy}
         maxRecipients={me?.caps?.max_recipients_per_check ?? 4}
         signedIn={!!me && me.plan !== "anon"}
+        limitReached={limitReached}
+        limitReachedReason={limitReachedCopy(me)}
       />
 
       <PlanFootnote me={me} busy={busy} />
@@ -542,6 +550,13 @@ function FreeUpgradeHint({ trialEndsAt }: { trialEndsAt: string | null }) {
       </Link>
     </p>
   )
+}
+
+function limitReachedCopy(me: MeResponse | null): string {
+  if (!me) return "Out of reveals for today."
+  if (me.plan === "anon") return "Out of free reveals for today. Sign up for 5/day."
+  if (me.plan === "free") return "Out of free reveals for today. Try Pro free for 10 days."
+  return "Out of reveals for today. Resets at midnight UTC."
 }
 
 function PlanFootnote({
