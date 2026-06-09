@@ -98,6 +98,10 @@ function SendCheckInner() {
   const [message, setMessage] = useState<string>("")
   const [rateLimitKind, setRateLimitKind] = useState<RateLimitKind | null>(null)
   const [showSignup, setShowSignup] = useState(false)
+  // Once the magic link is on its way, collapse the draft form so the
+  // user only sees one next-step surface — the "check your email" panel.
+  // Reset on token activation by the page reload via router.replace.
+  const [signupSent, setSignupSent] = useState(false)
   const signupCtaRef = useRef<HTMLDivElement | null>(null)
 
   function openSignup() {
@@ -309,37 +313,44 @@ function SendCheckInner() {
         </p>
       )}
 
-      <SendCheckForm
-        onSubmit={handleSubmit}
-        busy={busy}
-        maxRecipients={me?.caps?.max_recipients_per_check ?? 4}
-        signedIn={!!me && me.plan !== "anon"}
-        limitReached={limitReached}
-        limitReachedReason={limitReachedCopy(me)}
-      />
+      {!signupSent && (
+        <>
+          <SendCheckForm
+            onSubmit={handleSubmit}
+            busy={busy}
+            maxRecipients={me?.caps?.max_recipients_per_check ?? 4}
+            signedIn={!!me && me.plan !== "anon"}
+            limitReached={limitReached}
+            limitReachedReason={limitReachedCopy(me)}
+          />
 
-      <PlanFootnote me={me} busy={busy} />
+          <PlanFootnote me={me} busy={busy} />
 
-      {isAnon && status === "empty" && (
-        <p className="mt-6 font-sans text-[12px] text-ink-dimmed/80 leading-[1.55]">
-          <button
-            type="button"
-            onClick={openSignup}
-            className="underline decoration-divider underline-offset-2 hover:text-ink transition-colors"
-          >
-            Sign up free
-          </button>
-          {" "}for 5/day, saved personas, and history.
-        </p>
-      )}
+          {isAnon && status === "empty" && (
+            <p className="mt-6 font-sans text-[12px] text-ink-dimmed/80 leading-[1.55]">
+              <button
+                type="button"
+                onClick={openSignup}
+                className="underline decoration-divider underline-offset-2 hover:text-ink transition-colors"
+              >
+                Sign up free
+              </button>
+              {" "}for 5/day, saved personas, and history.
+            </p>
+          )}
 
-      {me?.plan === "free" && status === "empty" && (
-        <FreeUpgradeHint trialEndsAt={me.trial_ends_at ?? null} />
+          {me?.plan === "free" && status === "empty" && (
+            <FreeUpgradeHint trialEndsAt={me.trial_ends_at ?? null} />
+          )}
+        </>
       )}
 
       {isAnon && showSignup && (
         <div ref={signupCtaRef}>
-          <SendCheckSignupCta reason="Sign up free to unlock 5 reveals every day, save up to 3 recipient profiles, and keep your last 10 checks in history." />
+          <SendCheckSignupCta
+            reason="Sign up free to unlock 5 reveals every day, save up to 3 recipient profiles, and keep your last 10 checks in history."
+            onSent={() => setSignupSent(true)}
+          />
         </div>
       )}
 
@@ -351,7 +362,7 @@ function SendCheckInner() {
       />
 
       {status === "rate_limited" && rateLimitKind === "anon_used" && (
-        <SendCheckSignupCta reason={message} />
+        <SendCheckSignupCta reason={message} onSent={() => setSignupSent(true)} />
       )}
 
       {status === "rate_limited" && rateLimitKind === "daily_cap_reached" && (

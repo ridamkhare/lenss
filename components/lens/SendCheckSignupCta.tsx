@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 
 /**
  * Inline signup prompt shown after an anonymous user uses their free check.
@@ -10,10 +10,25 @@ import { useState } from "react"
 
 type Status = "idle" | "sending" | "sent" | "error"
 
-export function SendCheckSignupCta({ reason }: { reason: string }) {
+export function SendCheckSignupCta({
+  reason,
+  onSent,
+}: {
+  reason: string
+  /**
+   * Fired when the magic link has been sent — gives the parent a chance to
+   * collapse the now-stale draft form so the user isn't left looking at two
+   * "what do I do next" surfaces (the old form + the confirmation panel).
+   */
+  onSent?: () => void
+}) {
   const [email, setEmail] = useState("")
   const [status, setStatus] = useState<Status>("idle")
   const [errorMsg, setErrorMsg] = useState<string>("")
+
+  useEffect(() => {
+    if (status === "sent") onSent?.()
+  }, [status, onSent])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
