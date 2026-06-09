@@ -346,6 +346,7 @@ export function SendCheckForm({
                       type="button"
                       onClick={() => togglePersona(p)}
                       disabled={disabled}
+                      aria-pressed={isOn}
                       title={p.context || ""}
                       className={`pl-4 pr-2 py-2 disabled:opacity-40 disabled:cursor-not-allowed ${
                         isOn ? "" : "hover:text-ink"
@@ -390,6 +391,7 @@ export function SendCheckForm({
                 type="button"
                 onClick={() => toggle(value)}
                 disabled={disabled}
+                aria-pressed={isOn}
                 className={`px-4 py-2 rounded-full border text-[13px] font-sans transition-colors duration-200 disabled:opacity-40 disabled:cursor-not-allowed ${
                   isOn
                     ? "border-ink bg-ink text-paper"
