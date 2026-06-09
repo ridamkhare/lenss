@@ -104,7 +104,7 @@ export async function POST(req: NextRequest) {
           return
         }
         if (!recipients) {
-          emit({ type: "declined", reason: "Pick at least one recipient. Up to four." })
+          emit({ type: "declined", reason: "Pick at least one recipient." })
           return
         }
 
