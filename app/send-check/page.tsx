@@ -183,7 +183,24 @@ function SendCheckInner() {
       })
 
       if (!res.ok || !res.body) {
-        setMessage("That didn't come through. Try again in a moment.")
+        // Per-IP burst limiter (lib/security.ts) responds 429 with
+        // {error: "..."} — surface that reason instead of swallowing it as a
+        // generic "didn't come through". Anything else falls back to the
+        // generic copy so we never leak raw server text we haven't audited.
+        if (res.status === 429) {
+          try {
+            const data = await res.json()
+            const reason =
+              typeof data?.error === "string" && data.error.length < 200
+                ? data.error
+                : "Too many requests right now. Wait a minute and try again."
+            setMessage(reason)
+          } catch {
+            setMessage("Too many requests right now. Wait a minute and try again.")
+          }
+        } else {
+          setMessage("That didn't come through. Try again in a moment.")
+        }
         setStatus("error")
         return
       }
