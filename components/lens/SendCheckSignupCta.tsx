@@ -117,7 +117,7 @@ export function SendCheckSignupCta({ reason }: { reason: string }) {
       </form>
 
       <p className="mt-4 font-sans text-[11px] text-ink-dimmed/70">
-        14 days of unlimited Pro included, optional. No card. Cancel anytime.
+        10-day Pro trial included, optional. No card. Cancel anytime.
       </p>
 
       {status === "error" && (
